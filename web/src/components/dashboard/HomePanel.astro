@@ -1,0 +1,50 @@
+<section class="panel" data-panel="home">
+  <div class="home-grid">
+    <div class="home-left">
+      <div class="wallet">
+        <div class="wallet__face">
+          <i class="wallet__dot wallet__dot--tl"></i><i class="wallet__dot wallet__dot--tr"></i>
+          <i class="wallet__dot wallet__dot--bl"></i><i class="wallet__dot wallet__dot--br"></i>
+          <div class="wallet__coins" data-wallet-coins></div>
+          <span class="wallet__balance" data-home-balance>$0<small>.00</small></span>
+          <span class="wallet__change" data-wallet-change>+ $0.00</span>
+          <span class="wallet__meta"><span data-home-updated>—</span><button type="button" class="link-btn" data-home-refresh>⟳ Refresh</button></span>
+        </div>
+        <div class="wallet__actions">
+          <button type="button" class="wallet__action" data-open-deposit><span aria-hidden="true">↓</span> Deposit</button>
+          <i class="wallet__divider"></i>
+          <button type="button" class="wallet__action" data-open-send><span aria-hidden="true">↑</span> Withdraw</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-row"><span class="panel__label">Markets</span></div>
+        <div data-top-assets class="asset-list asset-list--loading">Loading…</div>
+      </div>
+    </div>
+
+    <div class="home-right">
+      <div class="ticker-row ticker-row--loading" data-ticker-row>Loading…</div>
+
+      <div class="card card--chart">
+        <span class="card__label">Portfolio Value</span>
+        <div class="chart-value-row">
+          <span class="stat-card__value" data-portfolio-value>—</span>
+          <span class="chart-change" data-portfolio-change></span>
+        </div>
+        <div class="chip-row" data-portfolio-range>
+          <button type="button" class="chip chip--active" data-range="1d">1D</button>
+          <button type="button" class="chip" data-range="7d">7D</button>
+          <button type="button" class="chip" data-range="30d">1M</button>
+          <button type="button" class="chip" data-range="all">All</button>
+        </div>
+        <div class="chart-area" data-portfolio-chart></div>
+      </div>
+
+      <div>
+        <h3 class="panel__subtitle">Positions</h3>
+        <div data-home-positions-table class="table-wrap table-wrap--loading">Loading…</div>
+      </div>
+    </div>
+  </div>
+</section>

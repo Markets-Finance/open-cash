@@ -1,0 +1,31 @@
+---
+import { isDevAuth } from "shared";
+import Mark from "../Mark.astro";
+---
+
+<div class="gate" data-gate>
+  <section class="gate__stage" aria-hidden="true">
+    <span class="gate__brand"><Mark />open<em>cash</em></span>
+    <div class="gate__lines"><i></i><i></i><i></i><i></i></div>
+    <Mark class="gate__logo" />
+    <small class="gate__legal">© OpenCash 2026</small>
+  </section>
+  <section class="gate__panel">
+    <div class="gate__card">
+      <div class="gate__top">
+        {isDevAuth && <span class="gate__dev">Dev mode · test account</span>}
+        <button type="button" class="gate__switch" data-gate-switch>Create an account</button>
+      </div>
+      <form class="gate__form" data-gate-form>
+        <h1 class="gate__title" data-gate-title>Sign in</h1>
+        <p class="gate__hint" data-gate-hint>Use your passkey.</p>
+        <div class="gate__fields" data-gate-fields hidden>
+          <label class="gfield"><span>Name</span><input name="name" type="text" autocomplete="name" placeholder="Ada Lovelace" /></label>
+          <label class="gfield"><span>Email</span><input name="email" type="email" autocomplete="email" placeholder="ada@example.com" /></label>
+        </div>
+        <p class="gate__status" data-gate-status role="status"></p>
+        <button type="submit" class="gate__go" data-gate-go>Sign in</button>
+      </form>
+    </div>
+  </section>
+</div>

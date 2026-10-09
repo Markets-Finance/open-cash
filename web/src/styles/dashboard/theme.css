@@ -1,0 +1,251 @@
+/* ---- Dark theme ---- */
+.dash,
+.modal {
+  background: var(--paper);
+  color: var(--ink);
+}
+.dash .dash__topbar {
+  background: rgba(11, 15, 14, 0.92);
+}
+.dash .dash__topbar .wordmark,
+.dash .dash__tabs button {
+  color: #9aa39f;
+}
+.dash .dash__tabs button[aria-selected="true"],
+.dash .dash__tabs button:hover {
+  color: var(--ink);
+}
+.dash .dash__search {
+  color: var(--ink);
+}
+.dash .dash__address-chip {
+  background: var(--surface-hover);
+  color: var(--ink);
+}
+.dash .dash__address-chip:hover {
+  background: var(--surface-line);
+}
+.trade-trade {
+  color: var(--ink);
+}
+:is(.dash, .modal) .card {
+  border: 1px solid var(--surface-line);
+}
+:is(.dash, .modal) .card--balance {
+  background: var(--lime);
+  color: var(--lime-ink);
+  border-color: var(--wallet);
+}
+.card--balance :is(.card__label, .balance-meta, .link-btn) {
+  color: var(--lime-ink);
+}
+:is(.dash, .modal) .card--balance :is(.chain-badge, .action-btn) {
+  background: var(--wallet);
+  color: var(--on-wallet);
+}
+:is(.dash, .modal) .card--balance .action-btn:hover:not(:disabled) {
+  background: var(--lime-ink);
+}
+:is(.dash, .modal) .card + .card {
+  margin-top: 0;
+}
+:is(.dash, .modal) .chain-badge,
+:is(.dash, .modal) .action-btn,
+:is(.dash, .modal) .chip {
+  background: var(--surface-hover);
+  color: var(--ink);
+}
+:is(.dash, .modal) .action-btn:hover:not(:disabled),
+:is(.dash, .modal) .chip:hover {
+  background: var(--surface-line);
+}
+:is(.dash, .modal) .chip--active,
+:is(.dash, .modal) .chip--active:hover {
+  background: var(--line);
+}
+.dash button:disabled,
+.dash input:disabled,
+.dash select:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+:is(.dash, .modal) .row-mark {
+  background: var(--surface-line);
+}
+:is(.dash, .modal) .row-mark--logo {
+  background: #fff;
+}
+:is(.dash, .modal) .change-up {
+  color: var(--trade-green);
+}
+:is(.dash, .modal) .change-down {
+  color: var(--trade-red);
+}
+:is(.dash, .modal) .link-btn {
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+:is(.dash, .modal) .field input,
+:is(.dash, .modal) .field select {
+  height: var(--sp-2xl);
+}
+:is(.dash, .modal) .field select {
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  width: 100%;
+}
+:is(.dash, .modal) .table-wrap {
+  overflow-x: auto;
+}
+:is(.dash, .modal) .data-table tbody tr {
+  cursor: default;
+}
+:is(.dash, .modal) .data-table tbody td {
+  white-space: nowrap;
+}
+.trade-mono {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  letter-spacing: -0.02em;
+}
+.trade-note {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: var(--sp-xs);
+}
+.trade-asset {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: var(--sp-sm);
+  border-radius: var(--radius-sm);
+}
+.trade-asset:hover,
+.trade-asset--active {
+  background: var(--surface-hover);
+}
+.trade-asset__detail {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+}
+:is(.dash, .modal) .ticker-card {
+  border: 1px solid var(--surface-line);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+}
+:is(.dash, .modal) .ticker-card--active {
+  border-color: var(--trade-green);
+}
+.trade-chart {
+  position: relative;
+  height: 260px;
+  cursor: crosshair;
+}
+.trade-chart__dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--trade-green);
+  background: var(--paper);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.trade-chart__tip {
+  position: absolute;
+  top: var(--sp-sm);
+  padding: var(--sp-xs) var(--sp-sm);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-hover);
+  font-size: 12px;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.trade-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--sp-sm);
+  font-size: 11px;
+  color: var(--muted);
+}
+.trade-trade .home-grid {
+  grid-template-columns: 300px minmax(0, 1fr) 320px;
+}
+.trade-ticket-bar {
+  position: sticky;
+  top: calc(70px + var(--sp-lg));
+}
+@media (max-width: 1280px) {
+  .trade-trade .home-grid {
+    grid-template-columns: 300px minmax(0, 1fr);
+  }
+  .trade-ticket-bar {
+    grid-column: 2;
+    position: static;
+  }
+}
+.trade-desk {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-lg);
+  align-items: start;
+}
+.trade-desk > .card {
+  min-width: 0;
+}
+.trade-ticket {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-sm);
+}
+.trade-ticket .mode-row {
+  margin: var(--sp-xs) 0 0;
+}
+.trade-ticket__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-sm);
+  align-items: end;
+}
+.trade-ticket__row[hidden] {
+  display: none;
+}
+.trade-check {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xs);
+  padding-bottom: var(--sp-sm);
+  font-size: 13px;
+}
+.trade-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-xs);
+}
+.trade-trade .trade-actions .chip {
+  padding: var(--sp-xs) var(--sp-sm);
+  font-size: 12px;
+}
+

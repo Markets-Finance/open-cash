@@ -1,0 +1,103 @@
+<section class="panel" data-panel="trade" hidden>
+
+  <div data-trade-list>
+    <div class="board-widgets">
+      <div class="card card--balance widget widget--account">
+        <div class="balance-head">
+          <span class="card__label">Account</span>
+          <span class="chain-badge">Hyperliquid Testnet</span>
+        </div>
+        <span class="stat-card__value stat-card__value--lg trade-mono" data-trade-balance>—</span>
+        <div class="balance-meta">
+          <span class="trade-mono" data-trade-updated>—</span>
+          <button type="button" class="link-btn" data-trade-refresh>⟳ Refresh</button>
+        </div>
+        <p class="trade-note" data-trade-wallet-note></p>
+      </div>
+      <div class="card widget" data-widget-volume><small class="widget__sub">Loading…</small></div>
+      <div class="card widget" data-widget-funding><small class="widget__sub">Loading…</small></div>
+      <div class="card widget widget--list" data-widget-gainers><small class="widget__sub">Loading…</small></div>
+      <div class="card widget widget--list" data-widget-carry><small class="widget__sub">Loading…</small></div>
+    </div>
+
+    <div class="card board">
+      <div class="board-bar">
+        <div class="chip-row" data-board-filters></div>
+        <input type="search" class="search-field board-search" data-trade-search placeholder="Search assets" autocomplete="off" />
+      </div>
+      <div class="table-wrap board-wrap" data-board-table><p class="empty">Loading markets…</p></div>
+    </div>
+
+    <div class="card">
+      <span class="panel__label">Open positions</span>
+      <div data-trade-desk class="table-wrap table-wrap--loading">Loading…</div>
+      <p class="status-line" data-trade-desk-status></p>
+    </div>
+  </div>
+
+  <div data-trade-asset hidden>
+    <button type="button" class="back-btn" data-trade-back><span aria-hidden="true">←</span> All assets</button>
+    <div class="trade-asset-grid">
+      <div class="trade-asset-main">
+        <div class="card card--chart">
+          <div class="chart-head">
+            <div class="chart-head__id">
+              <span class="card__label" data-trade-market-label>—</span>
+              <span class="chart-head__price trade-mono" data-trade-market-price>—</span>
+              <small class="chart-head__meta" data-trade-market-meta></small>
+            </div>
+            <div class="chip-row" data-trade-range>
+              <button type="button" class="chip" data-range="1h">1H</button>
+              <button type="button" class="chip" data-range="4h">4H</button>
+              <button type="button" class="chip chip--active" data-range="1d">1D</button>
+              <button type="button" class="chip" data-range="1w">1W</button>
+              <button type="button" class="chip" data-range="1m">1M</button>
+            </div>
+          </div>
+          <div class="chart-area chart-area--tall" data-trade-chart></div>
+        </div>
+        <div class="card">
+          <span class="panel__label">Market details</span>
+          <div class="stat-grid stat-grid--four" data-trade-stats><p class="empty">Loading…</p></div>
+          <span class="panel__label">Order book depth</span>
+          <div class="depth" data-trade-depth></div>
+          <p class="panel__lede">Positive funding means longs pay shorts. Figures come from Hyperliquid testnet.</p>
+        </div>
+      </div>
+
+      <aside class="trade-ticket-bar">
+        <div class="card trade-ticket">
+          <span class="card__label" data-trade-ticket-title>Order</span>
+          <div class="side-switch" role="tablist">
+            <button type="button" class="side-switch__btn side-switch__btn--long is-on" data-side="long">Long</button>
+            <button type="button" class="side-switch__btn side-switch__btn--short" data-side="short">Short</button>
+          </div>
+          <div class="amount-box">
+            <div class="amount-box__head"><span>Margin</span><small data-ticket-available>Available —</small></div>
+            <div class="amount-box__row">
+              <span class="amount-box__cur">$</span>
+              <input type="number" min="0" step="any" placeholder="0" inputmode="decimal" data-ticket-margin />
+              <em>USDC</em>
+            </div>
+            <div class="quick-row" data-ticket-quick>
+              <button type="button" data-quick="0.25">25%</button>
+              <button type="button" data-quick="0.5">50%</button>
+              <button type="button" data-quick="0.75">75%</button>
+              <button type="button" data-quick="1">Max</button>
+            </div>
+          </div>
+          <div class="lev" data-lev-risk="low">
+            <div class="lev__head"><span>Leverage</span><b data-ticket-leverage-label>3x</b></div>
+            <input type="range" class="lev__range" min="1" max="15" step="1" value="3" data-ticket-leverage aria-label="Leverage" />
+            <div class="lev__ticks" data-ticket-ticks></div>
+            <small class="lev__risk" data-ticket-risk></small>
+          </div>
+          <p class="quote-line" data-ticket-size></p>
+          <div class="cost" data-ticket-cost hidden></div>
+          <button type="button" class="btn btn--primary" data-ticket-submit>Place order</button>
+          <p class="status-line" data-ticket-status></p>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>

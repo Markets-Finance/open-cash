@@ -1,0 +1,130 @@
+.bots {
+  display: grid;
+  gap: var(--sp-lg);
+  max-width: 900px;
+}
+.bots__create {
+  display: grid;
+  gap: var(--sp-sm);
+  padding: var(--sp-lg);
+}
+.bots__note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.bots__form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-sm);
+}
+.bots__form input,
+.bots__form select,
+.bot__rules input {
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+}
+.bots__form input {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+.bots__list {
+  display: grid;
+  gap: var(--sp-md);
+}
+.bot {
+  display: grid;
+  gap: var(--sp-sm);
+  padding: var(--sp-lg);
+}
+.bot__head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  flex-wrap: wrap;
+}
+.bot__name {
+  font-weight: 600;
+  font-size: 15px;
+}
+.pill {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--surface-hover);
+  color: var(--muted);
+}
+.pill--open,
+.pill--watching {
+  background: rgba(62, 207, 142, 0.16);
+  color: var(--up);
+}
+.pill--halted,
+.pill--stopped {
+  background: rgba(239, 91, 91, 0.16);
+  color: var(--down);
+}
+.bot__spacer {
+  flex: 1;
+}
+.bot__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-md);
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.bot__rules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-sm);
+  align-items: end;
+}
+.bot__rules .field {
+  width: 120px;
+}
+.bot__log {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.bot__log-row {
+  display: flex;
+  gap: var(--sp-sm);
+}
+.bot__log-row--error {
+  color: var(--down);
+}
+.bot__log-row--action {
+  color: var(--ink);
+}
+.bot__log a {
+  color: var(--accent);
+}
+[data-x-text] {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink);
+  resize: none;
+  word-break: break-all;
+}
+[data-x-card] {
+  display: grid;
+  gap: var(--sp-sm);
+  padding: var(--sp-lg);
+}
+.bots--wide {
+  max-width: 1200px;
+}

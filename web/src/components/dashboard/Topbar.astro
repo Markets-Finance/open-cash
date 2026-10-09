@@ -1,0 +1,41 @@
+---
+import Mark from "../Mark.astro";
+---
+
+<header class="dash__topbar">
+  <a class="wordmark" href="/"><Mark />open<span>cash</span></a>
+  <nav class="dash__tabs" data-tabs role="tablist" aria-label="Dashboard sections">
+    <button data-tab="home" role="tab" aria-selected="true">Home</button>
+    <button data-tab="agent" role="tab" aria-selected="false">Bots</button>
+      <button data-tab="bins" role="tab" aria-selected="false">Bins</button>
+    <button data-tab="trade" role="tab" aria-selected="false">Trade</button>
+    <button data-tab="analytics" role="tab" aria-selected="false">Analytics</button>
+    <button data-tab="account" role="tab" aria-selected="false">Account</button>
+  </nav>
+  <div class="dash__topbar-spacer"></div>
+  <div class="dash__topbar-utility">
+    <input
+      type="search"
+      class="dash__search"
+      placeholder="Search a symbol…"
+      data-global-search
+      autocomplete="off"
+    />
+    <div class="dash__account-menu" data-account-menu>
+      <button
+        type="button"
+        class="dash__address-chip"
+        data-topbar-address
+        aria-haspopup="menu"
+        aria-expanded="false"
+      >
+        <span data-topbar-address-text>—</span>
+      </button>
+      <div class="dash__menu" role="menu" data-account-menu-list hidden>
+        <button type="button" class="dash__menu-item" role="menuitem" data-disconnect>
+          Disconnect
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
