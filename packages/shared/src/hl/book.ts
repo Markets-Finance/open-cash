@@ -35,10 +35,12 @@ export async function loadDeepBook(info: InfoClient, coin: string): Promise<Book
   };
 }
 
+export type OhlcInterval = "5m" | "15m" | "30m" | "1h" | "4h" | "1d";
+
 export async function loadOhlc(
   info: InfoClient,
   coin: string,
-  interval: "1h" | "4h" | "1d",
+  interval: OhlcInterval,
   startTime: number,
 ): Promise<Candle[]> {
   const candles = await info.candleSnapshot({ coin, interval, startTime });
@@ -53,8 +55,15 @@ export async function loadOhlc(
 }
 
 export async function loadFunding(info: InfoClient, coin: string, startTime: number): Promise<FundingPoint[]> {
-  const points = await info.fundingHistory({ coin, startTime });
-  return points.map((p) => ({ timeMs: p.time, hourlyRate: Number(p.fundingRate) }));
+  const out: FundingPoint[] = [];
+  let from = startTime;
+  for (let page = 0; page < 20; page++) {
+    const points = await info.fundingHistory({ coin, startTime: from });
+    out.push(...points.map((p) => ({ timeMs: p.time, hourlyRate: Number(p.fundingRate) })));
+    if (points.length < 500) break;
+    from = points[points.length - 1].time + 1;
+  }
+  return out;
 }
 
 export async function loadFeeRates(info: InfoClient, user?: `0x${string}`): Promise<HlFeeRates> {

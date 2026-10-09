@@ -55,7 +55,7 @@ export {
   loadOhlc,
   marketFeeRates,
 } from "./book.js";
-export type { HlFeeRates } from "./book.js";
+export type { HlFeeRates, OhlcInterval } from "./book.js";
 export {
   bridgeAbi,
   bridgeConfig,
