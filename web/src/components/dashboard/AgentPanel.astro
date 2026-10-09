@@ -1,0 +1,94 @@
+---
+import StrategyLab from "./StrategyLab.astro";
+---
+<section class="panel" data-panel="agent" hidden>
+  <div class="switcher" data-switcher="agent" role="tablist">
+    <button type="button" data-switch="strategies" aria-pressed="true"><i class="switcher__dot switcher__dot--butter"></i>Strategies</button>
+    <button type="button" data-switch="agent" aria-pressed="false"><i class="switcher__dot switcher__dot--violet"></i>Agent</button>
+  </div>
+  <div data-pane="agent:strategies"><StrategyLab /></div>
+  <div data-pane="agent:agent" hidden>
+  <div class="agent">
+    <div class="agent__main">
+      <form class="agent__composer" data-agent-form>
+        <input
+          type="text"
+          data-agent-input
+          autocomplete="off"
+          placeholder="Describe a trade: long ETH short BTC 2x $100 stop 8%"
+        />
+        <button type="submit" class="btn btn--primary">Draft</button>
+      </form>
+      <p class="agent__hint" data-agent-hint></p>
+      <div class="chip-row" data-agent-ideas></div>
+
+      <div class="agent__tools" data-agent-tools>
+        <span class="panel__label">Analysis tools</span>
+        <div class="chip-row">
+          <button type="button" class="chip" data-tool="list_markets">Markets</button>
+          <button type="button" class="chip" data-tool="market_snapshot">Snapshot</button>
+          <button type="button" class="chip" data-tool="funding_history">Funding</button>
+          <button type="button" class="chip" data-tool="price_stats">Price stats</button>
+          <button type="button" class="chip" data-tool="order_book">Order book</button>
+          <button type="button" class="chip" data-tool="compare_pair">Compare pair</button>
+          <button type="button" class="chip" data-tool="smart_money">Smart money</button>
+        </div>
+        <div class="agent__args" data-agent-args>
+          <label class="field"><span>Market</span><input data-arg="symbol" value="BTC" /></label>
+          <label class="field"><span>Long</span><input data-arg="long" value="ETH" /></label>
+          <label class="field"><span>Short</span><input data-arg="short" value="BTC" /></label>
+          <label class="field"><span>Days</span><input data-arg="days" type="number" min="1" max="30" value="7" /></label>
+          <label class="field"><span>Order USD</span><input data-arg="notionalUsd" type="number" min="0" value="300" /></label>
+        </div>
+      </div>
+
+      <div class="agent__feed" data-agent-feed>
+        <p class="empty">Run a tool or draft a trade. Everything the agent looks at appears here.</p>
+      </div>
+    </div>
+
+    <div class="agent__side">
+      <aside class="agent__card card" data-agent-card>
+        <span class="card__label">Strategy card</span>
+        <p class="empty" data-card-empty>Draft a trade or pick an idea to build a card.</p>
+        <div data-card-body hidden>
+          <label class="field"><span>Name</span><input data-card-name /></label>
+          <div class="agent__row">
+            <label class="field"><span>Margin $</span><input data-card-margin type="number" min="0" step="any" /></label>
+            <label class="field"><span>Stop %</span><input data-card-stop type="number" min="0" step="any" /></label>
+            <label class="field"><span>Target %</span><input data-card-tp type="number" min="0" step="any" /></label>
+          </div>
+          <div data-card-legs class="agent__legs"></div>
+          <button type="button" class="link-btn" data-card-add>+ Add leg</button>
+          <div data-card-preview class="agent__preview"></div>
+          <button type="button" class="btn btn--primary" data-card-approve disabled>Open now with passkey</button>
+          <div class="agent__botrow">
+            <select data-card-mode aria-label="Bot mode">
+              <option value="guard">Guard an open position</option>
+              <option value="auto">Auto open and guard</option>
+            </select>
+            <button type="button" class="btn" data-card-bot>Run as bot</button>
+          </div>
+          <p class="status-line" data-card-status></p>
+        </div>
+      </aside>
+
+      <section class="card agent__bots">
+        <span class="card__label">Your bots</span>
+        <p class="bots__note">
+          Bots run in this tab while you are signed in. Close it and they stop. Every action is logged with its
+          transaction.
+        </p>
+        <p class="agent__hint" data-bot-hint></p>
+        <div class="bots__list" data-paper-list></div>
+        <div class="bots__list" data-bot-list>
+          <p class="empty">No bots yet.</p>
+        </div>
+        <span class="card__label">Running on the server</span>
+        <p class="agent__hint">These keep running while this tab is closed. They trade with a key that can place orders but cannot withdraw.</p>
+        <div class="bots__list" data-server-bot-list></div>
+      </section>
+    </div>
+  </div>
+  </div>
+</section>
