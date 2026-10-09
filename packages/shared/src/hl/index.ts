@@ -66,3 +66,4 @@ export {
   usdcPermitAbi,
 } from "./deposit.js";
 export type { SignedDeposit } from "./deposit.js";
+export { stockLogoUrl } from "./logos.js";

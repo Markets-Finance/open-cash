@@ -1,5 +1,5 @@
 import type { InfoClient } from "@nktkas/hyperliquid";
-import { stockLogoUrl } from "../hood/logos.js";
+import { stockLogoUrl } from "./logos.js";
 import { listMarkets } from "./markets.js";
 import type { HlMarketKind } from "./orders.js";
 import { getAccount, type HlPosition } from "./positions.js";
