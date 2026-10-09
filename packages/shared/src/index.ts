@@ -1,6 +1,3 @@
-export { monadMainnet, monadTestnet } from "./chains.js";
-export type { MonadChain } from "./chains.js";
-export { monad, monadTestnetChain } from "./viem-chain.js";
 export {
   alertsNamespace,
   authMode,
@@ -26,7 +23,6 @@ export type {
   SealedRecord,
   TradingAccount,
 } from "./mera/index.js";
-export * from "./hood/index.js";
 export * from "./hl/index.js";
 export * from "./bins/index.js";
 export {
