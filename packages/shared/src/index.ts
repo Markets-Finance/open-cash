@@ -40,3 +40,4 @@ export * from "./analysis/index.js";
 export * from "./strategy/index.js";
 export * from "./agent/index.js";
 export * from "./templates/index.js";
+export * from "./bots/index.js";
