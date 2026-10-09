@@ -27,7 +27,19 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0b0f0e",
+          "android": {
+            "backgroundColor": "#0b0f0e"
+          },
+          "ios": {
+            "backgroundColor": "#0b0f0e"
+          }
+        }
+      ]
     ]
   }
 }

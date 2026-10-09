@@ -9,22 +9,26 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import type { Bin, BinSizingIssue, SizedBin, TradingAccount } from "shared";
+import { planBin, weightModes, type Bin, type BinSizingIssue, type SizedBin, type TradingAccount, type WeightMode } from "shared";
+import { toolbox } from "../lib/bots";
+import { agreementFor, flowText, loadPulses, stanceLabel } from "../lib/nansen";
+import { SelectPill } from "../components/ui";
 import { AssetMark, LegStack } from "../components/AssetMark";
-import { openBin, sizeBinFor, type EntryStep, type HoodData } from "../lib/hood";
+import { openBin, type EntryStep, type MarketData } from "../lib/perpl";
 import { dark, family, space, track } from "../theme";
 
 type BinDetailProps = {
   bin: Bin;
-  data: HoodData;
+  data: MarketData;
   balance: number | null;
   trader: TradingAccount;
   onBack: () => void;
 };
 
 const stepLabels: Record<EntryStep, string> = {
-  approve: "Approving USDG…",
-  swap: "Swapping every leg…",
+  approve: "Approving AUSD…",
+  fund: "Funding the account…",
+  orders: "Opening every leg…",
 };
 
 const presets = [10, 25, 50, 100];
@@ -36,32 +40,42 @@ export function BinDetail({ bin, data, balance, trader, onBack }: BinDetailProps
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const [sizing, setSizing] = useState(false);
-  const [result, setResult] = useState<{ sized: SizedBin; issues: BinSizingIssue[] } | null>(null);
+  const [mode, setMode] = useState<WeightMode>(bin.mode ?? "fixed");
+  const [result, setResult] = useState<{ sized: SizedBin; issues: BinSizingIssue[]; usedMode: WeightMode } | null>(null);
 
-  const usdgAmount = Number(amount) || 0;
+  const marginAmount = Number(amount) || 0;
+  const [pulses, setPulses] = useState<Awaited<ReturnType<typeof loadPulses>>>(null);
 
   useEffect(() => {
-    if (usdgAmount <= 0) {
+    let live = true;
+    loadPulses(bin.legs.map((leg) => leg.symbol)).then((next) => live && setPulses(next));
+    return () => {
+      live = false;
+    };
+  }, [bin]);
+
+  useEffect(() => {
+    if (marginAmount <= 0) {
       setResult(null);
       return;
     }
     let live = true;
     setSizing(true);
-    sizeBinFor(bin, usdgAmount, data.tokens)
+    planBin(toolbox, bin, marginAmount, data, mode)
       .then((next) => live && setResult(next))
       .catch(() => live && setResult(null))
       .finally(() => live && setSizing(false));
     return () => {
       live = false;
     };
-  }, [bin, usdgAmount, data]);
+  }, [bin, marginAmount, data, mode]);
 
   async function submit() {
     if (!result) return;
     setBusy(true);
     setFailed(false);
     try {
-      await openBin(trader, result.sized, (step) => setStatus(stepLabels[step]));
+      await openBin(trader, result.sized, data, (step) => setStatus(stepLabels[step]));
       setStatus(`${bin.name} is open.`);
     } catch (error) {
       setFailed(true);
@@ -74,13 +88,13 @@ export function BinDetail({ bin, data, balance, trader, onBack }: BinDetailProps
   const blocked =
     busy
       ? "Working…"
-      : usdgAmount <= 0
+      : marginAmount <= 0
       ? "Enter an amount"
       : sizing
         ? "Pricing…"
         : !result || result.sized.legs.length === 0
           ? "No leg can be filled at this size"
-          : balance !== null && usdgAmount > balance
+          : balance !== null && marginAmount > balance
             ? "Insufficient balance"
             : null;
 
@@ -91,7 +105,7 @@ export function BinDetail({ bin, data, balance, trader, onBack }: BinDetailProps
           <Text style={styles.back}>←</Text>
         </Pressable>
         <Text style={styles.heading}>{bin.name}</Text>
-        <View style={styles.iconButton} />
+        <View style={styles.iconSpacer} />
       </View>
 
       <ScrollView
@@ -130,10 +144,40 @@ export function BinDetail({ bin, data, balance, trader, onBack }: BinDetailProps
           </View>
           {balance !== null ? (
             <Text style={styles.balance}>
-              USDG balance ${balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              AUSD balance ${balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}
             </Text>
           ) : null}
         </View>
+
+        {pulses !== null && (
+          <View style={styles.pulseBox}>
+            <Text style={styles.fieldLabel}>SMART MONEY, 7 DAYS (NANSEN)</Text>
+            <Text style={styles.pulseLabel}>{agreementFor(bin.legs, [...pulses.values()]).label}</Text>
+            {bin.legs.map((leg) => {
+              const pulse = pulses.get(leg.symbol.toUpperCase());
+              if (!pulse || pulse.tokens.length === 0) return null;
+              return (
+                <View key={leg.symbol} style={styles.pulseRow}>
+                  <Text style={styles.pulseSymbol}>{leg.symbol}</Text>
+                  <Text style={[styles.pulseStance, { color: pulse.stance === "buying" ? dark.green : pulse.stance === "selling" ? dark.red : dark.muted }]}>{stanceLabel(pulse.stance)}</Text>
+                  <Text style={styles.pulseFlow}>{flowText(pulse.flow7dUsd)}</Text>
+                </View>
+              );
+            })}
+          </View>
+        )}
+
+        <View style={styles.modes}>
+          {weightModes.map((item) => (
+            <SelectPill key={item.key} label={item.label} active={mode === item.key} onPress={() => setMode(item.key)} />
+          ))}
+        </View>
+        <Text style={styles.modeHint}>{weightModes.find((item) => item.key === mode)?.hint}</Text>
+        {result !== null && result.usedMode !== mode && (
+          <View style={styles.warnCard}>
+            <Text style={styles.warnText}>Not enough data for {mode} weights, using fixed.</Text>
+          </View>
+        )}
 
         {(result?.sized.legs.length ?? 0) > 0 && (
           <View style={styles.legsCard}>
@@ -142,12 +186,14 @@ export function BinDetail({ bin, data, balance, trader, onBack }: BinDetailProps
               <View key={leg.leg.symbol} style={styles.legRow}>
                 <AssetMark symbol={leg.leg.symbol} size={34} />
                 <View style={styles.legIdentity}>
-                  <Text style={styles.legSymbol}>{leg.leg.symbol}</Text>
+                  <Text style={styles.legSymbol}>
+                    {leg.leg.direction === "long" ? "Long" : "Short"} {leg.leg.symbol} · {leg.leverage}x · {(leg.leg.weightBps / 100).toFixed(1)}%
+                  </Text>
                   <Text style={styles.legStat}>
-                    ${leg.usdgIn.toFixed(2)} · ≈ {leg.quote.tokensOut.toFixed(4)}
+                    ${leg.margin.toFixed(2)} margin · ${leg.notional.toFixed(2)} notional
                   </Text>
                 </View>
-                <Text style={styles.legPrice}>${leg.quote.price.toFixed(2)}</Text>
+                <Text style={styles.legPrice}>${leg.mark.toLocaleString(undefined, { maximumFractionDigits: 2 })}</Text>
               </View>
             ))}
           </View>
@@ -164,15 +210,14 @@ export function BinDetail({ bin, data, balance, trader, onBack }: BinDetailProps
         ) : null}
 
         <Text style={styles.footnote}>
-          All legs swap together or none do. Price and slippage are quoted live
-          from the Hyperliquid order book.
+          All legs open together or none do. Orders fill on the Perpl order book on Monad testnet.
         </Text>
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + space.md }]}>
         <View style={styles.totals}>
-          <Text style={styles.totalLabel}>Total USDG</Text>
-          <Text style={styles.totalValue}>${(result?.sized.usdgIn ?? 0).toFixed(2)}</Text>
+          <Text style={styles.totalLabel}>Total margin</Text>
+          <Text style={styles.totalValue}>${(result?.sized.margin ?? 0).toFixed(2)}</Text>
         </View>
         <Pressable
           disabled={blocked !== null}
@@ -211,20 +256,30 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontFamily: family.semibold,
-    fontSize: 19,
-    letterSpacing: track(19, -0.03),
+    fontSize: 26,
+    letterSpacing: -1,
+    textTransform: "uppercase",
     color: dark.ink,
   },
+  iconSpacer: { width: 54, height: 54 },
   iconButton: {
     width: 54,
     height: 54,
     borderRadius: 27,
-    backgroundColor: dark.surface,
+    backgroundColor: "#f3f4f1",
     alignItems: "center",
     justifyContent: "center",
   },
-  back: { fontFamily: family.regular, fontSize: 22, color: dark.muted },
+  back: { fontFamily: family.medium, fontSize: 22, color: "#14181a" },
   content: { padding: space.lg, gap: space.lg },
+  modes: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
+  pulseBox: { gap: space.xs, padding: space.md, borderRadius: 18, backgroundColor: dark.surface },
+  pulseLabel: { fontFamily: family.medium, fontSize: 14, color: dark.ink },
+  pulseRow: { flexDirection: "row", alignItems: "center", gap: space.md },
+  pulseSymbol: { width: 52, fontFamily: family.semibold, fontSize: 13, color: dark.ink },
+  pulseStance: { width: 72, fontFamily: family.medium, fontSize: 13 },
+  pulseFlow: { fontFamily: family.regular, fontSize: 13, color: dark.muted },
+  modeHint: { fontFamily: family.regular, fontSize: 12, color: dark.muted },
   identityRow: { flexDirection: "row", alignItems: "center", gap: space.md },
   thesis: {
     flex: 1,

@@ -11,8 +11,10 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { isDevAuth, type TradingAccount } from "shared";
+import { isDevAuth, perpl, type TradingAccount } from "shared";
 import { PassCard } from "../components/PassCard";
+import { AuthShell, type AuthMode } from "../components/AuthShell";
+import { SettingIcon, type SettingIconKind } from "../components/SettingIcon";
 import { TabBar, tabBarHeight, type TabKey } from "../components/TabBar";
 import { createAccount, revealPhrase, signIn } from "../lib/mera";
 import { dark, family, space, track } from "../theme";
@@ -21,7 +23,7 @@ const profileKey = "opencash.profile";
 
 export type Profile = { name: string; email: string; variant?: number };
 
-type Panel = "profile" | "settings" | "history" | "wallets" | null;
+type Panel = "profile" | "history" | "wallets" | "phrase" | "network" | null;
 
 const failures: Record<string, string> = {
   PRF_UNAVAILABLE:
@@ -61,11 +63,39 @@ function Action({ label, onPress, emphasis = "outline" }: ActionProps) {
   );
 }
 
+const tints = { purple: "#8f7cf5", lime: "#b4f58c", blue: "#6fb7f2", peach: "#f2b98b" } as const;
+
+type RowProps = {
+  icon: SettingIconKind;
+  tint: keyof typeof tints;
+  label: string;
+  value?: string;
+  last?: boolean;
+  onPress?: () => void;
+};
+
+function Row({ icon, tint, label, value, last, onPress }: RowProps) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={onPress === undefined}
+      accessibilityRole={onPress ? "button" : undefined}
+      style={({ pressed }) => [styles.row, !last && styles.rowDivider, pressed && styles.actionPressed]}
+    >
+      <View style={[styles.rowGlyph, { backgroundColor: tints[tint] }]}>
+        <SettingIcon kind={icon} cut={tints[tint]} />
+      </View>
+      <Text style={styles.rowLabel}>{label}</Text>
+      {value !== undefined && <Text style={styles.rowValue}>{value}</Text>}
+      {onPress !== undefined && <Text style={styles.chevron}>›</Text>}
+    </Pressable>
+  );
+}
+
 export function Account({
   initialAccount,
   initialProfile,
   portfolio,
-  onBack,
   onAuthenticated,
   onProfileChange,
   onInitialised,
@@ -74,7 +104,6 @@ export function Account({
   initialAccount: TradingAccount | null;
   initialProfile: Profile | null;
   portfolio: number | null;
-  onBack: () => void;
   onAuthenticated: (account: TradingAccount | null) => void;
   onProfileChange: (profile: Profile | null) => void;
   onInitialised: () => void;
@@ -208,7 +237,7 @@ export function Account({
       setStatus("A name and an email are both needed to label the passkey.");
       return;
     }
-    if (formMode === "profile") {
+    if (account !== null) {
       void saveProfile(entered);
       return;
     }
@@ -221,21 +250,147 @@ export function Account({
 
   const showTabBar = account !== null && profile !== null;
 
-  return (
-    <View style={styles.screen}>
-      {!showTabBar && (
+  const formCard = (
+            <View style={styles.card}>
+              <Text style={styles.field}>Name</Text>
+              <TextInput
+                value={name}
+                onChangeText={setName}
+                placeholder="Ada Lovelace"
+                placeholderTextColor={dark.muted}
+                autoComplete="name"
+                style={styles.input}
+              />
+              <Text style={styles.field}>Email</Text>
+              <TextInput
+                value={email}
+                onChangeText={setEmail}
+                placeholder="ada@example.com"
+                placeholderTextColor={dark.muted}
+                autoComplete="email"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                style={styles.input}
+              />
+              <Action
+                label={formMode === "profile" ? "Save profile" : "Create passkey"}
+                emphasis="primary"
+                onPress={submit}
+              />
+              <Text style={styles.note}>
+                {formMode === "profile"
+                  ? "Stored only on this device, encrypted with a key only your passkey can derive. Your address does not change."
+                  : "Your name and email label the passkey in your password manager, and are encrypted with a key only your passkey can derive."}
+              </Text>
+            </View>
+          
+  );
+
+  const titles: Record<Exclude<Panel, null>, string> = {
+    profile: "Profile",
+    wallets: "Wallets",
+    history: "History",
+    phrase: "Recovery phrase",
+    network: "Network",
+  };
+
+  function closePage() {
+    setPanel(null);
+    setFormMode(null);
+    setPhrase(null);
+  }
+
+  if (account === null || profile === null) {
+    const authMode: AuthMode = account !== null ? "profile" : formMode === "create" ? "create" : "signin";
+    return (
+      <AuthShell
+        mode={authMode}
+        dev={isDevAuth}
+        name={name}
+        email={email}
+        status={status}
+        failed={failed}
+        onName={setName}
+        onEmail={setEmail}
+        onSwitch={account === null ? () => setFormMode(formMode === "create" ? null : "create") : undefined}
+        onSubmit={() => (authMode === "signin" ? void run(signIn, "Waiting for your passkey…") : submit())}
+      />
+    );
+  }
+
+  if (account !== null && showTabBar && panel !== null) {
+    return (
+      <View style={styles.screen}>
         <View style={[styles.header, { paddingTop: insets.top + space.sm }]}>
-          <Pressable onPress={onBack} hitSlop={12} style={styles.iconButton}>
+          <Pressable onPress={closePage} hitSlop={12} style={styles.iconButton} accessibilityLabel="Back">
             <Text style={styles.back}>←</Text>
           </Pressable>
-          <Text style={styles.heading}>Account</Text>
-          <View style={styles.iconButton} />
+          <Text style={styles.heading}>{titles[panel]}</Text>
+          <View style={styles.iconSpacer} />
         </View>
-      )}
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + insets.bottom + space.xl }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {panel === "profile" && formCard}
+          {panel === "wallets" && (
+            <View style={styles.card}>
+              <Text style={styles.note}>One passkey, one address. Monad Testnet</Text>
+              <Text style={styles.walletAddress}>{account.address}</Text>
+              <Action label={copied ? "Copied" : "Copy address"} onPress={() => void copyAddress()} />
+            </View>
+          )}
+          {panel === "history" && (
+            <View style={styles.card}>
+              <Text style={styles.note}>
+                No trades recorded on this device yet. Filled bins will appear here once an indexer is wired up.
+              </Text>
+            </View>
+          )}
+          {panel === "phrase" && (
+            <View style={styles.card}>
+              {phrase === null ? (
+                <>
+                  <Text style={styles.note}>
+                    Your 24 words rebuild this account in any wallet. Anyone who has them owns it. Reveal them only where nobody can see your screen.
+                  </Text>
+                  <Action label="Reveal with passkey" emphasis="primary" onPress={showPhrase} />
+                </>
+              ) : (
+                <>
+                  <Text style={styles.phraseWords}>{phrase}</Text>
+                  <Text style={styles.note}>
+                    Write them on paper. Never type them into anything but a wallet you trust.
+                  </Text>
+                  <Action label="Hide" emphasis="quiet" onPress={() => setPhrase(null)} />
+                </>
+              )}
+            </View>
+          )}
+          {panel === "network" && (
+            <View style={styles.card}>
+              <Text style={styles.note}>Network</Text>
+              <Text style={styles.walletAddress}>Monad Testnet · chain {perpl.perplTestnet.chainId}</Text>
+              <Text style={styles.note}>Perpl exchange</Text>
+              <Text style={styles.walletAddress}>{perpl.perplTestnet.exchange}</Text>
+              <Text style={styles.note}>Collateral (AUSD)</Text>
+              <Text style={styles.walletAddress}>{perpl.perplTestnet.collateral}</Text>
+            </View>
+          )}
+          {status !== "" && <Text style={[styles.status, failed && styles.statusFailed]}>{status}</Text>}
+        </ScrollView>
+        <TabBar active="account" onSelect={onSelectTab} />
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.screen}>
       {showTabBar && (
         <View style={[styles.header, { paddingTop: insets.top + space.sm }]}>
           <Text style={styles.heading}>Account</Text>
-          <View style={styles.iconButton} />
+          <View style={styles.iconSpacer} />
         </View>
       )}
 
@@ -273,7 +428,7 @@ export function Account({
             email={profile?.email}
             tier={isDevAuth ? "Dev account" : "Passkey pass"}
             variant={variant}
-            network="Hyperliquid Testnet"
+            network="Monad Testnet"
             value={portfolio}
             copied={copied}
             onCopyAddress={() => void copyAddress()}
@@ -303,114 +458,29 @@ export function Account({
                 />
               ) : (
                 <>
-                  <View style={styles.options}>
-                    {(
-                      [
-                        ["Profile", "profile"],
-                        ["Account settings", "settings"],
-                        ["History", "history"],
-                        ["Wallets", "wallets"],
-                      ] as const
-                    ).map(([label, key]) => (
-                      <Pressable
-                        key={key}
-                        onPress={() => openPanel(key)}
-                        style={({ pressed }) => [
-                          styles.option,
-                          panel === key && styles.optionActive,
-                          pressed && styles.actionPressed,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.optionLabel,
-                            panel === key && styles.optionLabelActive,
-                          ]}
-                        >
-                          {label}
-                        </Text>
-                      </Pressable>
-                    ))}
+                  <Text style={styles.sectionLabel}>Account settings</Text>
+                  <View style={styles.group}>
+                    <Row icon="profile" tint="purple" label="Profile" onPress={() => openPanel("profile")} />
+                    <Row icon="wallet" tint="blue" label="Wallets" onPress={() => openPanel("wallets")} />
+                    <Row icon="history" tint="lime" label="History" onPress={() => openPanel("history")} last />
                   </View>
 
-                  {panel === "settings" && (
-                    <View style={styles.card}>
-                      <Action label="Show recovery phrase" onPress={showPhrase} />
-                      <Action label="Sign out" emphasis="quiet" onPress={signOut} />
-                    </View>
-                  )}
+                  <Text style={styles.sectionLabel}>Security</Text>
+                  <View style={styles.group}>
+                    <Row icon="lock" tint="peach" label="Recovery phrase" onPress={() => openPanel("phrase")} last />
+                  </View>
 
-                  {panel === "history" && (
-                    <View style={styles.card}>
-                      <Text style={styles.note}>
-                        No trades recorded on this device yet. Filled bins will
-                        appear here once an indexer is wired up.
-                      </Text>
-                    </View>
-                  )}
-
-                  {panel === "wallets" && (
-                    <View style={styles.card}>
-                      <Text style={styles.note}>
-                        One passkey, one address. Hyperliquid Testnet
-                      </Text>
-                      <Text style={styles.walletAddress}>{account.address}</Text>
-                    </View>
-                  )}
+                  <Text style={styles.sectionLabel}>Settings</Text>
+                  <View style={styles.group}>
+                    <Row icon="globe" tint="blue" label="Network" value="Monad Testnet" onPress={() => openPanel("network")} />
+                    <Row icon="exit" tint="peach" label="Sign out" onPress={signOut} last />
+                  </View>
                 </>
               )}
             </>
           )}
 
-          {phrase !== null && (
-            <View style={styles.card}>
-              <Text style={styles.phraseWords}>{phrase}</Text>
-              <Text style={styles.note}>
-                These 24 words rebuild this account in any wallet. Write them on
-                paper. Never type them into anything but a wallet you trust.
-              </Text>
-              <Action
-                label="Hide"
-                emphasis="quiet"
-                onPress={() => setPhrase(null)}
-              />
-            </View>
-          )}
-
-          {formMode !== null && (
-            <View style={styles.card}>
-              <Text style={styles.field}>Name</Text>
-              <TextInput
-                value={name}
-                onChangeText={setName}
-                placeholder="Ada Lovelace"
-                placeholderTextColor={dark.muted}
-                autoComplete="name"
-                style={styles.input}
-              />
-              <Text style={styles.field}>Email</Text>
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                placeholder="ada@example.com"
-                placeholderTextColor={dark.muted}
-                autoComplete="email"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                style={styles.input}
-              />
-              <Action
-                label={formMode === "profile" ? "Save profile" : "Create passkey"}
-                emphasis="primary"
-                onPress={submit}
-              />
-              <Text style={styles.note}>
-                {formMode === "profile"
-                  ? "Stored only on this device, encrypted with a key only your passkey can derive. Your address does not change."
-                  : "Your name and email label the passkey in your password manager, and are encrypted with a key only your passkey can derive."}
-              </Text>
-            </View>
-          )}
+          {formMode !== null && panel === null && formCard}
 
           {status !== "" && (
             <Text style={[styles.status, failed && styles.statusFailed]}>
@@ -434,19 +504,21 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontFamily: family.semibold,
-    fontSize: 19,
-    letterSpacing: track(19, -0.03),
+    fontSize: 26,
+    letterSpacing: -1,
+    textTransform: "uppercase",
     color: dark.ink,
   },
+  iconSpacer: { width: 54, height: 54 },
   iconButton: {
     width: 54,
     height: 54,
     borderRadius: 27,
-    backgroundColor: dark.surface,
+    backgroundColor: "#f3f4f1",
     alignItems: "center",
     justifyContent: "center",
   },
-  back: { fontFamily: family.regular, fontSize: 22, color: dark.muted },
+  back: { fontFamily: family.medium, fontSize: 22, color: "#14181a" },
   content: { padding: space.lg, gap: space.lg },
   lede: {
     fontFamily: family.regular,
@@ -455,19 +527,16 @@ const styles = StyleSheet.create({
     color: dark.muted,
   },
   actions: { gap: space.md },
-  options: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
-  option: {
-    flexGrow: 1,
-    flexBasis: "46%",
-    minHeight: 52,
-    borderRadius: 16,
-    backgroundColor: dark.surface,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  optionActive: { backgroundColor: dark.accent },
-  optionLabel: { fontFamily: family.medium, fontSize: 14, color: dark.ink },
-  optionLabelActive: { color: dark.onAccent },
+  sectionLabel: { fontFamily: family.medium, fontSize: 13, color: dark.muted, marginTop: space.sm },
+  group: { borderRadius: 28, backgroundColor: dark.surface, paddingHorizontal: space.lg },
+  row: { minHeight: 60, flexDirection: "row", alignItems: "center", gap: space.md },
+  rowDivider: { borderBottomWidth: 1, borderBottomColor: dark.surfaceLine },
+  rowGlyph: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
+  rowGlyphText: { fontFamily: family.semibold, fontSize: 16, color: "#14181a" },
+  rowLabel: { flex: 1, fontFamily: family.medium, fontSize: 15, color: dark.ink },
+  rowLabelActive: { color: dark.accent },
+  rowValue: { fontFamily: family.regular, fontSize: 13, color: dark.muted },
+  chevron: { fontFamily: family.regular, fontSize: 22, color: dark.muted },
   card: { padding: space.lg, borderRadius: 18, backgroundColor: dark.surface, gap: space.sm },
   walletAddress: { fontFamily: family.regular, fontSize: 12, color: dark.ink },
   action: {

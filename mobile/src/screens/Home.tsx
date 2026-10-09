@@ -1,27 +1,34 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { bins, type BinPosition, type MarketChart, type TradingAccount } from "shared";
+import { bins, type BinPosition, type TradingAccount } from "shared";
+import { AddressMark } from "../components/AddressMark";
 import { AssetMark, LegStack } from "../components/AssetMark";
 import { TabBar, tabBarHeight, type TabKey } from "../components/TabBar";
-import { fetchMarketCharts, snapshotPortfolio } from "../lib/backend";
-import { coinLogoUrl, fallbackCoins, loadHlSummary, type HlSummary } from "../lib/hl";
-import { loadPositions, loadTokens, loadUsdgBalance } from "../lib/hood";
+import { ArrowBadge, CardTitle, RoundButton, Tag, ToneCard, tone } from "../components/ui";
+import { loadMarkets, loadPositions, loadSummary, type MarketData, type PortfolioSummary } from "../lib/perpl";
 import { dark, family, space, touch, track } from "../theme";
 
 const featuredSymbols = [...new Set(bins.flatMap((bin) => bin.legs.map((leg) => leg.symbol)))];
 
 type HomeProps = {
   trader: TradingAccount;
+  name?: string;
   onSelectTab: (key: TabKey) => void;
+  onOpenAsset: (symbol: string) => void;
+  onDeposit: () => void;
+  onSend: () => void;
 };
 
 function usd(value: number): string {
-  return `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  return `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
-function pct(value: number): string {
-  return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
+
+function px(value: number): string {
+  const digits = value >= 100 ? 2 : value >= 1 ? 4 : 6;
+  return `$${value.toLocaleString(undefined, { maximumFractionDigits: digits })}`;
 }
+
 function money(value: number): { whole: string; cents: string } {
   const [whole, cents] = Math.abs(value)
     .toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -29,61 +36,50 @@ function money(value: number): { whole: string; cents: string } {
   return { whole: `${value < 0 ? "−" : ""}$${whole}`, cents: `.${cents}` };
 }
 
-export function Home({ trader, onSelectTab }: HomeProps) {
+export function Home({ trader, name, onSelectTab, onOpenAsset, onDeposit, onSend }: HomeProps) {
   const insets = useSafeAreaInsets();
-  const [balance, setBalance] = useState<number | null>(null);
-  const [hl, setHl] = useState<HlSummary | null>(null);
+  const [summary, setSummary] = useState<PortfolioSummary | null>(null);
   const [positions, setPositions] = useState<BinPosition[] | null>(null);
+  const [data, setData] = useState<MarketData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [charts, setCharts] = useState<Record<string, MarketChart> | null>(null);
-
-  useEffect(() => {
-    loadUsdgBalance(trader.address)
-      .then(setBalance)
-      .catch(() => setBalance(null));
-  }, [trader.address]);
 
   useEffect(() => {
     let live = true;
-    loadTokens()
-      .then((data) => loadPositions(trader.address, data.tokens))
+    loadMarkets()
+      .then((markets) => {
+        if (live) setData(markets);
+        loadSummary(trader.address, markets).then((next) => live && setSummary(next)).catch(() => live && setSummary(null));
+        return loadPositions(trader.address, markets);
+      })
       .then((held) => live && setPositions(held))
       .catch((cause) => live && setError(String(cause)));
-    fetchMarketCharts(featuredSymbols)
-      .then((next) => live && setCharts(next))
-      .catch(() => {});
-    loadHlSummary(trader.address)
-      .then((next) => live && setHl(next))
-      .catch(() => live && setHl(null));
     return () => {
       live = false;
     };
   }, [trader.address]);
 
-  useEffect(() => {
-    if (balance === null || positions === null) return;
-    const positionsValue = positions.reduce((sum, p) => sum + p.valueUsdg, 0);
-    void snapshotPortfolio({ owner: trader.address, usdgBalance: balance, positionsValue }).catch(() => {});
-  }, [balance, positions, trader.address]);
-
-  const total = money(hl?.total ?? 0);
-  const pnl = hl?.unrealizedPnl ?? 0;
+  const listed = data ? featuredSymbols.filter((symbol) => data.markets.has(symbol)) : featuredSymbols;
+  const pnl = summary?.unrealizedPnl ?? 0;
+  const total = money(summary?.total ?? 0);
   const change = money(Math.abs(pnl));
 
   return (
     <View style={styles.screen}>
-      <View style={[styles.header, { paddingTop: insets.top + space.sm }]}>
-        <Text style={styles.heading}>Home</Text>
-        <View style={styles.iconButton} />
-      </View>
-
       <ScrollView
-        contentContainerStyle={[
-          styles.content,
-          { paddingBottom: tabBarHeight + insets.bottom + space.xl },
-        ]}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + space.sm, paddingBottom: tabBarHeight + insets.bottom + space.xl }]}
         showsVerticalScrollIndicator={false}
       >
+        <View style={styles.greetRow}>
+          <View style={styles.avatar}>
+            <AddressMark address={trader.address} variant={0} size={30} />
+          </View>
+          <Text style={styles.greet} numberOfLines={1}>
+            Hi, {name ?? "trader"}!
+          </Text>
+          <RoundButton glyph="⌕" label="Find a market" light onPress={() => onSelectTab("bins")} />
+          <RoundButton glyph="+" label="New trade" fill={tone.coral} onPress={() => onSelectTab("trade")} />
+        </View>
+
         <View style={styles.wallet}>
           <View style={styles.walletFace}>
             <View style={[styles.dot, styles.dotTopLeft]} />
@@ -91,8 +87,10 @@ export function Home({ trader, onSelectTab }: HomeProps) {
             <View style={[styles.dot, styles.dotBottomLeft]} />
             <View style={[styles.dot, styles.dotBottomRight]} />
             <View style={styles.coinStack}>
-              {(hl?.coins ?? fallbackCoins).map((coin, index) => (
-                <CoinMark key={coin} coin={coin} first={index === 0} />
+              {(summary?.symbols.length ? summary.symbols : listed).slice(0, 4).map((coin, index) => (
+                <View key={coin} style={[styles.walletCoin, index > 0 && styles.walletCoinOverlap]}>
+                  <AssetMark symbol={coin} size={28} />
+                </View>
               ))}
             </View>
             <Text style={styles.walletBalance} numberOfLines={1} adjustsFontSizeToFit>
@@ -105,12 +103,12 @@ export function Home({ trader, onSelectTab }: HomeProps) {
             </Text>
           </View>
           <View style={styles.walletActions}>
-            <Pressable style={styles.walletAction} onPress={() => onSelectTab("trade")}>
-              <Text style={styles.walletIcon}>⟳</Text>
-              <Text style={styles.walletActionLabel}>Swap</Text>
+            <Pressable style={styles.walletAction} onPress={onDeposit} accessibilityRole="button">
+              <Text style={styles.walletIcon}>↓</Text>
+              <Text style={styles.walletActionLabel}>Deposit</Text>
             </Pressable>
             <View style={styles.walletDivider} />
-            <Pressable style={styles.walletAction} onPress={() => onSelectTab("trade")}>
+            <Pressable style={styles.walletAction} onPress={onSend} accessibilityRole="button">
               <View style={styles.sendIcon}>
                 <Text style={styles.walletIcon}>↑</Text>
                 <View style={styles.sendBar} />
@@ -120,86 +118,73 @@ export function Home({ trader, onSelectTab }: HomeProps) {
           </View>
         </View>
 
-        <View style={styles.actionRow}>
-          <Pressable style={styles.actionButton} onPress={() => onSelectTab("trade")}>
-            <Text style={styles.actionLabel}>Trade</Text>
+        <ToneCard fill={tone.violet}>
+          <View style={styles.cardHead}>
+            <View style={styles.headText}>
+              <CardTitle onColor>Markets</CardTitle>
+              <Text style={styles.onColorMuted}>Tap a market to trade it</Text>
+            </View>
+            <ArrowBadge dark label="Open Trade" onPress={() => onSelectTab("trade")} />
+          </View>
+          <View style={styles.marketList}>
+            {listed.map((symbol) => {
+              const mark = data?.markets.get(symbol)?.mark;
+              const leverage = data?.maxLeverage.get(symbol);
+              return (
+                <Pressable
+                  key={symbol}
+                  onPress={() => onOpenAsset(symbol)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Trade ${symbol}`}
+                  style={({ pressed }) => [styles.marketRow, pressed && styles.pressed]}
+                >
+                  <AssetMark symbol={symbol} size={26} />
+                  <Text style={styles.marketSymbol}>{symbol}</Text>
+                  <Text style={styles.marketPrice}>{mark === undefined ? "—" : px(mark)}</Text>
+                  <View style={styles.levTag}>
+                    <Text style={styles.levText}>{leverage === undefined ? "—" : `${leverage}x`}</Text>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        </ToneCard>
+
+        <View style={styles.quick}>
+          <Pressable onPress={() => onSelectTab("bins")} style={({ pressed }) => [styles.quickItem, { backgroundColor: tone.butter }, pressed && styles.pressed]}>
+            <Text style={styles.quickTitle}>BINS</Text>
+            <Text style={styles.quickSub}>Trade a theme in one tap</Text>
           </Pressable>
-          <Pressable style={styles.actionButton} onPress={() => onSelectTab("bins")}>
-            <Text style={styles.actionLabel}>Bins</Text>
+          <Pressable onPress={() => onSelectTab("bots")} style={({ pressed }) => [styles.quickItem, { backgroundColor: tone.coral }, pressed && styles.pressed]}>
+            <Text style={styles.quickTitle}>BOTS</Text>
+            <Text style={styles.quickSub}>Test a strategy first</Text>
           </Pressable>
         </View>
 
-        <Text style={styles.sectionTitle}>Top Assets</Text>
-        <View style={styles.card}>
-          {featuredSymbols.map((symbol) => {
-            const chart = charts?.[symbol];
-            return (
-              <View key={symbol} style={styles.assetRow}>
-                <AssetMark symbol={symbol} size={32} />
-                <Text style={styles.assetSymbol}>{symbol}</Text>
-                <View style={styles.spacer} />
-                <Text style={styles.assetPrice}>{chart ? usd(chart.price) : "—"}</Text>
-                <Text
-                  style={[
-                    styles.assetChange,
-                    chart ? (chart.changePercent >= 0 ? styles.changeUp : styles.changeDown) : null,
-                  ]}
-                >
-                  {chart ? pct(chart.changePercent) : "—"}
-                </Text>
-              </View>
-            );
-          })}
-        </View>
-
-        <Text style={styles.sectionTitle}>Ticker</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tickerRow}
-        >
-          {featuredSymbols.slice(0, 4).map((symbol) => {
-            const chart = charts?.[symbol];
-            return (
-              <View key={symbol} style={styles.tickerCard}>
-                <View style={styles.tickerHead}>
-                  <AssetMark symbol={symbol} size={22} />
-                  <Text style={styles.tickerSymbol}>{symbol}</Text>
-                </View>
-                <Text style={styles.tickerPrice}>{chart ? usd(chart.price) : "—"}</Text>
-                <Text
-                  style={[
-                    styles.tickerChange,
-                    chart ? (chart.changePercent >= 0 ? styles.changeUp : styles.changeDown) : null,
-                  ]}
-                >
-                  {chart ? `${pct(chart.changePercent)} today` : "—"}
-                </Text>
-              </View>
-            );
-          })}
-        </ScrollView>
-
-        <Text style={styles.sectionTitle}>Positions</Text>
+        <Text style={styles.section}>POSITIONS</Text>
         {error !== null ? (
           <Text style={styles.error}>{error}</Text>
         ) : positions === null ? (
           <ActivityIndicator color={dark.ink} />
         ) : positions.length === 0 ? (
-          <Text style={styles.empty}>No open positions yet. Open a bin to take a framing.</Text>
+          <Text style={styles.muted}>No open positions yet. Open a bin to take a view.</Text>
         ) : (
-          <View style={styles.list}>
-            {positions.map((position) => (
-              <View key={position.bin.id} style={styles.positionRow}>
-                <LegStack symbols={position.legs.map((leg) => leg.symbol)} size={28} />
-                <View style={styles.positionIdentity}>
-                  <Text style={styles.assetSymbol}>{position.bin.name}</Text>
+          positions.map((position) => (
+            <ToneCard key={position.bin.id}>
+              <View style={styles.cardHead}>
+                <LegStack symbols={position.legs.map((leg) => leg.symbol)} size={30} />
+                <View style={styles.headText}>
+                  <Text style={styles.positionName}>{position.bin.name.toUpperCase()}</Text>
                   <Text style={styles.muted}>{position.legs.map((leg) => leg.symbol).join(", ")}</Text>
                 </View>
-                <Text style={styles.assetPrice}>{usd(position.valueUsdg)}</Text>
+                <ArrowBadge label="Open in Trade" onPress={() => onOpenAsset(position.legs[0]?.symbol ?? "BTC")} />
               </View>
-            ))}
-          </View>
+              <View style={styles.tagRow}>
+                <Tag label={`Value ${usd(position.deposit + position.pnl)}`} />
+                <Tag label={`PnL ${position.pnl >= 0 ? "+" : "−"}${usd(Math.abs(position.pnl))}`} dot={position.pnl >= 0 ? dark.green : dark.red} />
+              </View>
+            </ToneCard>
+          ))
         )}
       </ScrollView>
 
@@ -208,152 +193,55 @@ export function Home({ trader, onSelectTab }: HomeProps) {
   );
 }
 
-type CoinMarkProps = { coin: string; first: boolean };
-
-function CoinMark({ coin, first }: CoinMarkProps) {
-  const [failed, setFailed] = useState(false);
-  return (
-    <View style={[styles.coin, !first && styles.coinOverlap]}>
-      {failed ? (
-        <Text style={styles.coinLetter}>{coin.slice(0, 1)}</Text>
-      ) : (
-        <Image source={{ uri: coinLogoUrl(coin) }} style={styles.coinImage} onError={() => setFailed(true)} />
-      )}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: dark.paper },
-  header: {
-    paddingHorizontal: space.lg,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  heading: {
-    fontFamily: family.semibold,
-    fontSize: 25,
-    letterSpacing: track(25, -0.04),
-    color: dark.ink,
-  },
-  iconButton: { width: 54, height: 54, borderRadius: 27 },
-  content: { padding: space.lg, gap: space.lg },
-  card: { padding: space.lg, borderRadius: space.lg, backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.surfaceLine, gap: space.sm },
-  muted: { fontFamily: family.regular, fontSize: 12, color: dark.muted },
-
-  wallet: {
-    padding: space.md,
-    borderRadius: space.xl + space.md,
-    borderWidth: 1,
-    borderColor: dark.surfaceLine,
-    backgroundColor: dark.wallet,
-  },
-  walletFace: {
-    alignItems: "center",
-    paddingVertical: space.xxl,
-    paddingHorizontal: space.xl,
-    borderRadius: space.xl,
-    backgroundColor: dark.lime,
-  },
-  dot: {
-    position: "absolute",
-    width: space.sm,
-    height: space.sm,
-    borderRadius: space.xs,
-    backgroundColor: dark.wallet,
-  },
+  content: { paddingHorizontal: space.lg, gap: space.lg },
+  pressed: { opacity: 0.75 },
+  greetRow: { flexDirection: "row", alignItems: "center", gap: space.sm },
+  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: tone.peach, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  greet: { flex: 1, fontFamily: family.medium, fontSize: 17, color: dark.ink },
+  cardHead: { flexDirection: "row", alignItems: "center", gap: space.md },
+  headText: { flex: 1, gap: 2 },
+  wallet: { padding: space.md, borderRadius: space.xl + space.md, borderWidth: 1, borderColor: dark.surfaceLine, backgroundColor: dark.wallet },
+  walletFace: { alignItems: "center", paddingVertical: space.xxl, paddingHorizontal: space.xl, borderRadius: space.xl, backgroundColor: dark.lime },
+  dot: { position: "absolute", width: space.sm, height: space.sm, borderRadius: space.xs, backgroundColor: dark.wallet },
   dotTopLeft: { top: space.xl, left: space.xl },
   dotTopRight: { top: space.xl, right: space.xl },
   dotBottomLeft: { bottom: space.xl, left: space.xl },
   dotBottomRight: { bottom: space.xl, right: space.xl },
   coinStack: { flexDirection: "row" },
-  coin: {
-    width: space.xxl,
-    height: space.xxl,
-    borderRadius: space.xxl / 2,
-    borderWidth: 2,
-    borderColor: dark.wallet,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  coinOverlap: { marginLeft: -space.xs },
-  coinImage: { width: "100%", height: "100%" },
-  coinLetter: { fontFamily: family.semibold, fontSize: 14, color: dark.wallet },
-  walletBalance: {
-    fontFamily: family.semibold,
-    fontSize: 56,
-    letterSpacing: track(56, -0.05),
-    color: dark.limeInk,
-    marginTop: space.md,
-  },
+  walletCoin: { width: space.xxl, height: space.xxl, borderRadius: space.xxl / 2, borderWidth: 2, borderColor: dark.wallet, backgroundColor: "#fff", alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  walletCoinOverlap: { marginLeft: -space.xs },
+  walletBalance: { fontFamily: family.semibold, fontSize: 56, letterSpacing: track(56, -0.05), color: dark.limeInk, marginTop: space.md },
   walletCents: { fontSize: 30, letterSpacing: track(30, -0.03) },
-  walletChange: {
-    fontFamily: family.medium,
-    fontSize: 22,
-    letterSpacing: track(22, -0.02),
-    color: dark.limeInk,
-    marginTop: space.sm,
-  },
-  walletActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: space.xxl,
-  },
-  walletAction: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: space.sm,
-  },
+  walletChange: { fontFamily: family.medium, fontSize: 22, letterSpacing: track(22, -0.02), color: dark.limeInk, marginTop: space.sm },
+  walletActions: { flexDirection: "row", alignItems: "center", paddingVertical: space.xl },
+  walletAction: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space.sm, minHeight: touch },
   walletIcon: { fontSize: 24, lineHeight: 28, color: dark.onWallet },
   sendIcon: { alignItems: "center" },
   sendBar: { width: space.lg, height: 2, borderRadius: 1, backgroundColor: dark.onWallet },
   walletActionLabel: { fontFamily: family.medium, fontSize: 24, color: dark.onWallet },
   walletDivider: { width: 1, height: space.section, backgroundColor: dark.line },
-
-  actionRow: { flexDirection: "row", gap: space.sm },
-  actionButton: {
-    flex: 1,
-    paddingVertical: space.md,
-    borderRadius: 14,
-    minHeight: touch,
-    justifyContent: "center",
-    backgroundColor: dark.surfaceHover,
-    alignItems: "center",
-  },
-  actionLabel: { fontFamily: family.medium, fontSize: 13, color: dark.ink },
-  sectionTitle: {
-    fontFamily: family.medium,
-    fontSize: 11,
-    letterSpacing: track(11, 0.12),
-    color: dark.muted,
-  },
-  assetRow: { flexDirection: "row", alignItems: "center", gap: space.sm, paddingVertical: space.sm },
-  assetSymbol: { fontFamily: family.semibold, fontSize: 14, color: dark.ink },
-  spacer: { flex: 1 },
-  assetPrice: { fontFamily: family.medium, fontSize: 13, color: dark.ink },
-  assetChange: { fontFamily: family.regular, fontSize: 11, minWidth: 54, textAlign: "right" },
-  changeUp: { color: dark.green },
-  changeDown: { color: dark.red },
-  tickerRow: { gap: space.md, paddingRight: space.lg },
-  tickerCard: { width: 140, padding: space.md, borderRadius: space.md, backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.surfaceLine, gap: space.xs },
-  tickerHead: { flexDirection: "row", alignItems: "center", gap: 6 },
-  tickerSymbol: { fontFamily: family.regular, fontSize: 11, color: dark.muted },
-  tickerPrice: { fontFamily: family.semibold, fontSize: 17, color: dark.ink },
-  tickerChange: { fontFamily: family.regular, fontSize: 11 },
-  list: { borderRadius: space.lg, backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.surfaceLine, overflow: "hidden" },
-  positionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space.md,
-    paddingVertical: space.md,
-    paddingHorizontal: space.md,
-  },
-  positionIdentity: { flex: 1, gap: 2 },
-  empty: { fontFamily: family.regular, fontSize: 13, color: dark.muted },
-  error: { fontFamily: family.regular, fontSize: 13, color: dark.red },
+  tagRow: { flexDirection: "row", flexWrap: "wrap", gap: space.xs },
+  muted: { fontFamily: family.regular, fontSize: 12, lineHeight: 18, color: dark.muted },
+  onColorMuted: { fontFamily: family.regular, fontSize: 12, color: "rgba(20, 24, 26, 0.7)" },
+  circles: { gap: space.sm },
+  circle: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255, 255, 255, 0.85)" },
+  circleActive: { backgroundColor: tone.ink },
+  focusRow: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between" },
+  focusSymbol: { fontFamily: family.semibold, fontSize: 20, color: tone.ink },
+  focusPrice: { fontFamily: family.medium, fontSize: 30, letterSpacing: -1, color: tone.ink },
+  marketList: { borderRadius: 20, backgroundColor: "rgba(20, 24, 26, 0.12)", paddingHorizontal: space.md },
+  marketRow: { flexDirection: "row", alignItems: "center", gap: space.md, minHeight: 52 },
+  marketSymbol: { flex: 1, fontFamily: family.semibold, fontSize: 15, color: tone.ink },
+  marketPrice: { fontFamily: family.medium, fontSize: 14, color: tone.ink },
+  levTag: { paddingVertical: 3, paddingHorizontal: space.sm, borderRadius: 999, backgroundColor: tone.ink },
+  levText: { fontFamily: family.medium, fontSize: 11, color: tone.paper },
+  quick: { flexDirection: "row", gap: space.md },
+  quickItem: { flex: 1, borderRadius: 28, padding: space.lg, gap: space.xs, minHeight: 112, justifyContent: "flex-end" },
+  quickTitle: { fontFamily: family.semibold, fontSize: 22, letterSpacing: -0.8, color: tone.ink },
+  quickSub: { fontFamily: family.regular, fontSize: 12, color: "rgba(20, 24, 26, 0.75)" },
+  section: { fontFamily: family.semibold, fontSize: 22, letterSpacing: -0.8, color: dark.ink },
+  positionName: { fontFamily: family.semibold, fontSize: 16, letterSpacing: -0.4, color: dark.ink },
+  error: { fontFamily: family.regular, fontSize: 12, color: dark.red },
 });

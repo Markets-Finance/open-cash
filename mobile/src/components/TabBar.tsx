@@ -1,16 +1,21 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Fragment } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Diamond } from "./Diamond";
-import { dark, family, space, touch, track } from "../theme";
+import { TabIcon } from "./TabIcon";
+import { dark, space } from "../theme";
 
-export type TabKey = "home" | "bins" | "trade" | "account";
+export type TabKey = "home" | "bins" | "trade" | "bots" | "account";
 
 const tabs: { key: TabKey; label: string }[] = [
   { key: "home", label: "Home" },
   { key: "bins", label: "Bins" },
   { key: "trade", label: "Trade" },
+  { key: "bots", label: "Bots" },
   { key: "account", label: "Account" },
 ];
+
+const chip = "#d9d4ff";
+const chipInk = "#14181a";
 
 type TabBarProps = {
   active: TabKey;
@@ -19,24 +24,30 @@ type TabBarProps = {
 
 export function TabBar({ active, onSelect }: TabBarProps) {
   const insets = useSafeAreaInsets();
+  const activeIndex = tabs.findIndex((tab) => tab.key === active);
 
   return (
-    <View style={[styles.bar, { paddingBottom: insets.bottom + space.sm }]}>
-      {tabs.map((tab) => {
+    <View style={[styles.bar, { bottom: insets.bottom + space.sm }]}>
+      {tabs.map((tab, index) => {
         const selected = tab.key === active;
+        const showDivider = index > 0 && index !== activeIndex && index - 1 !== activeIndex;
         return (
-          <Pressable
-            key={tab.key}
-            onPress={() => onSelect(tab.key)}
-            accessibilityRole="tab"
-            accessibilityState={{ selected }}
-            style={({ pressed }) => [styles.tab, pressed && styles.pressed]}
-          >
-            <Diamond size={5} fill={selected ? dark.accent : dark.line} />
-            <Text style={[styles.label, selected && styles.labelActive]}>
-              {tab.label}
-            </Text>
-          </Pressable>
+          <Fragment key={tab.key}>
+            {index > 0 && <View style={[styles.divider, !showDivider && styles.dividerHidden]} />}
+            <Pressable
+              onPress={() => onSelect(tab.key)}
+              accessibilityRole="tab"
+              accessibilityLabel={tab.label}
+              accessibilityState={{ selected }}
+              style={styles.tab}
+            >
+              {({ pressed }) => (
+                <View style={[styles.chip, selected && styles.chipActive, pressed && styles.pressed]}>
+                  <TabIcon tab={tab.key} color={selected ? chipInk : dark.muted} cut={selected ? chip : dark.surface} />
+                </View>
+              )}
+            </Pressable>
+          </Fragment>
         );
       })}
     </View>
@@ -48,22 +59,21 @@ export const tabBarHeight = 72;
 const styles = StyleSheet.create({
   bar: {
     position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
+    left: space.lg,
+    right: space.lg,
+    height: 64,
     flexDirection: "row",
-    paddingTop: space.sm,
-    backgroundColor: dark.paper,
-    borderTopWidth: 1,
-    borderTopColor: dark.surfaceLine,
+    alignItems: "center",
+    paddingHorizontal: space.sm,
+    borderRadius: 32,
+    backgroundColor: dark.surface,
+    borderWidth: 1,
+    borderColor: dark.surfaceLine,
   },
-  tab: { flex: 1, minHeight: touch, alignItems: "center", justifyContent: "center", gap: space.xs },
+  tab: { flex: 1, height: 64, alignItems: "center", justifyContent: "center" },
+  chip: { width: 48, height: 48, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  chipActive: { backgroundColor: chip },
   pressed: { opacity: 0.6 },
-  label: {
-    fontFamily: family.regular,
-    fontSize: 11,
-    letterSpacing: track(11, 0.06),
-    color: dark.muted,
-  },
-  labelActive: { fontFamily: family.medium, color: dark.ink },
+  divider: { width: 1, height: 20, backgroundColor: dark.line },
+  dividerHidden: { backgroundColor: "transparent" },
 });
