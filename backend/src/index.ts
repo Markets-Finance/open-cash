@@ -3,6 +3,7 @@ import Fastify from "fastify";
 import { hoodMainnet } from "shared";
 import { registerBoardsRoute } from "./boards/route.js";
 import { registerDepositRoute } from "./deposit/route.js";
+import { registerBotRoute } from "./runner/route.js";
 import { registerMarketRoute } from "./market/route.js";
 import { warmTradableCache } from "./market/tradable.js";
 import { registerPortfolioRoute } from "./portfolio/route.js";
@@ -22,6 +23,7 @@ app.get("/health", async () => ({
 
 registerBoardsRoute(app);
 registerDepositRoute(app);
+registerBotRoute(app);
 registerMarketRoute(app);
 registerPortfolioRoute(app);
 
