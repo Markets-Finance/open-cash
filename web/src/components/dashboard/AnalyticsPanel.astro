@@ -1,0 +1,29 @@
+<section class="panel" data-panel="analytics" hidden>
+  <div class="an-bar">
+    <div class="switcher" data-switcher="an" role="tablist">
+      <button type="button" data-switch="protocol" aria-pressed="true"><i class="switcher__dot switcher__dot--butter"></i>Markets</button>
+      <button type="button" data-switch="wallet" aria-pressed="false"><i class="switcher__dot switcher__dot--violet"></i>Wallets</button>
+    </div>
+    <div class="an-bar__right">
+      <div class="seg-pills" role="group" aria-label="Network">
+        <button type="button" data-an-net="mainnet" aria-pressed="true">Mainnet</button>
+        <button type="button" data-an-net="testnet" aria-pressed="false">Testnet</button>
+      </div>
+      <span class="live" data-an-live><i></i><span>Connecting…</span></span>
+    </div>
+  </div>
+
+  <div data-pane="an:protocol">
+    <div class="an-headline" data-an-headline><p class="empty">Loading Hyperliquid…</p></div>
+    <div class="card"><span class="panel__label">Markets by volume</span><div class="table-wrap" data-an-markets></div></div>
+  </div>
+
+  <div data-pane="an:wallet" hidden>
+    <form class="an-search" data-an-search>
+      <input type="text" class="search-field" data-an-address placeholder="Paste a Hyperliquid wallet address" autocomplete="off" spellcheck="false" />
+      <button type="submit" class="btn btn--primary">Look up</button>
+      <button type="button" class="btn" data-an-board-btn>Leaderboard</button>
+    </form>
+    <div data-an-wallet><p class="empty">Loading the leaderboard…</p></div>
+  </div>
+</section>
