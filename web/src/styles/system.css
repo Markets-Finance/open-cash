@@ -11,8 +11,8 @@
   --accent: #7165ed;
   --on-accent: #ffffff;
   --purple: var(--accent);
-  --hl-green: var(--up);
-  --hl-red: var(--down);
+  --trade-green: var(--up);
+  --trade-red: var(--down);
   --lime: #b4f58c;
   --lime-ink: #2d6a1e;
   --wallet: #0c0c0c;

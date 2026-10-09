@@ -1,0 +1,24 @@
+---
+import Mark from "../Mark.astro";
+---
+
+<section class="connection section-frame" aria-labelledby="connection-title">
+  <div class="section-heading">
+    <h2 id="connection-title">From an AUSD balance<br />to an open position.</h2>
+    <p>OpenCash sits between your AUSD balance and the Perpl order book on Monad. Every leg of a bin opens in one transaction that either fills together or reverts together, and every call is signed by your own passkey.</p>
+  </div>
+  <div class="connection-graphic" aria-label="AUSD balance connects to leveraged markets, thematic bins, and passkey-signed settlement">
+    <svg class="connection-lines" viewBox="0 0 1000 360" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M120 80H360L500 180 640 80H880M120 280H360L500 180 640 280H880M500 0V360"></path>
+      <path class="flow-line" d="M120 80H360L500 180 640 280H880"></path>
+    </svg>
+    <div class="connection-center">
+      <div class="diamond-stack" aria-hidden="true"><i></i><i></i><i></i></div><Mark class="center-mark" /><strong>open</strong><span>CASH</span>
+    </div>
+    <span class="connection-label top-left">AUSD balance</span>
+    <span class="connection-label bottom-left">Leveraged markets</span>
+    <span class="connection-label top-right">Thematic bins</span>
+    <span class="connection-label bottom-right">Passkey-signed calls</span>
+  </div>
+  <div class="tech-strip"><span>BUILT ON</span><span class="chain-mark"><b>Monad</b></span><span>Order book</span><span>Passkey signing ↗</span></div>
+</section>
