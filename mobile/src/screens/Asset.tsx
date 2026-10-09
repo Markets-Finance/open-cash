@@ -1,28 +1,17 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { perpl, summarizeDepth, type DepthSummary, type MarketSnapshot, type TradingAccount } from "shared";
+import { chartRanges, closeBin, maxOrderNotionalUsd, type Candle, type ChartRangeKey, type DepthSummary, type HlPosition, type MarketSnapshot, type TradingAccount } from "shared";
 import { AssetMark } from "../components/AssetMark";
 import { LineChart } from "../components/LineChart";
 import { TabBar, tabBarHeight, type TabKey } from "../components/TabBar";
 import { OrderTicket } from "../components/OrderTicket";
 import { RoundButton, Tag, ToneCard, tone } from "../components/ui";
-import { toolbox } from "../lib/bots";
-import { flowText, loadPulses, stanceLabel } from "../lib/nansen";
-import {
-  candleRanges,
-  loadCandles,
-  closePosition,
-  loadMarkets,
-  loadOpenPositions,
-  type Candle,
-  type CandleRangeKey,
-  type MarketData,
-  type OpenPosition,
-} from "../lib/perpl";
+import { agentExchange } from "../lib/hl";
+import { displaySymbol, loadAccountDesk, loadCandles, loadMarkets, loadMarketView, type MarketData } from "../lib/market";
 import { dark, family, space, touch } from "../theme";
 
-const rangeKeys = Object.keys(candleRanges) as CandleRangeKey[];
+const rangeKeys = Object.keys(chartRanges) as ChartRangeKey[];
 
 function px(value: number): string {
   const digits = value >= 100 ? 2 : value >= 1 ? 4 : 6;
@@ -39,9 +28,9 @@ function usd(value: number): string {
   return `${value < 0 ? "−" : ""}$${Math.abs(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function stamp(time: number, range: CandleRangeKey): string {
+function stamp(time: number, range: ChartRangeKey): string {
   const date = new Date(time);
-  return candleRanges[range].spanMs <= 86_400_000
+  return chartRanges[range].spanMs <= 86_400_000
     ? date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
     : date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
@@ -57,26 +46,27 @@ type AssetProps = {
 export function Asset({ symbol, trader, onBack, onSelectTab, onStrategies }: AssetProps) {
   const insets = useSafeAreaInsets();
   const [data, setData] = useState<MarketData | null>(null);
-  const [range, setRange] = useState<CandleRangeKey>("1d");
+  const [range, setRange] = useState<ChartRangeKey>("1d");
   const [candles, setCandles] = useState<Candle[] | null>(null);
   const [snapshot, setSnapshot] = useState<MarketSnapshot | null>(null);
   const [depth, setDepth] = useState<DepthSummary | null>(null);
-  const [positions, setPositions] = useState<OpenPosition[]>([]);
+  const [positions, setPositions] = useState<HlPosition[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  function refreshPositions(markets: MarketData) {
-    loadOpenPositions(trader.address, markets)
-      .then((held) => setPositions(held.filter((p) => p.market.symbol === symbol)))
+  function refreshPositions() {
+    loadAccountDesk(trader.address, true)
+      .then((desk) => setPositions(desk.positions.filter((p) => p.coin === symbol)))
       .catch(() => {});
   }
 
-  async function close(entry: OpenPosition) {
+  async function close(entry: HlPosition) {
     if (!data) return;
     setBusy(true);
     try {
-      await closePosition(trader, entry);
-      refreshPositions(data);
+      const [result] = await closeBin(await agentExchange(trader), [entry], data.markets, { maxNotionalUsd: maxOrderNotionalUsd });
+      if (result?.error) throw new Error(result.error);
+      refreshPositions();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -91,18 +81,14 @@ export function Asset({ symbol, trader, onBack, onSelectTab, onStrategies }: Ass
       .then((markets) => {
         if (!live) return;
         setData(markets);
-        loadOpenPositions(trader.address, markets).then((held) => live && setPositions(held.filter((p) => p.market.symbol === symbol))).catch(() => {});
+        loadAccountDesk(trader.address).then((desk) => live && setPositions(desk.positions.filter((p) => p.coin === symbol))).catch(() => {});
       })
       .catch((e) => live && setError(e instanceof Error ? e.message : String(e)));
-    toolbox
-      .getSnapshot(symbol)
-      .then(({ snapshot: next }) => live && setSnapshot(next))
-      .catch(() => {});
-    toolbox
-      .getBook(symbol)
-      .then((book) => {
-        const mid = book.bids[0] && book.asks[0] ? (book.bids[0].price + book.asks[0].price) / 2 : 0;
-        if (live && mid > 0) setDepth(summarizeDepth(book, mid));
+    loadMarketView(symbol, trader.address)
+      .then((view) => {
+        if (!live) return;
+        setSnapshot(view.snapshot);
+        setDepth(view.depth);
       })
       .catch(() => {});
     return () => {
@@ -115,7 +101,7 @@ export function Asset({ symbol, trader, onBack, onSelectTab, onStrategies }: Ass
     if (!target) return;
     let live = true;
     setCandles(null);
-    loadCandles(target, range)
+    loadCandles(target.name, range)
       .then((next) => live && setCandles(next))
       .catch(() => live && setCandles([]));
     return () => {
@@ -124,20 +110,9 @@ export function Asset({ symbol, trader, onBack, onSelectTab, onStrategies }: Ass
   }, [data, symbol, range]);
 
   const market = data?.markets.get(symbol) ?? null;
-  const cap = data?.maxLeverage.get(symbol) ?? snapshot?.maxLeverage ?? null;
-  const rangeChange =
+    const rangeChange =
     candles && candles.length >= 2 ? ((candles[candles.length - 1].close - candles[0].open) / candles[0].open) * 100 : null;
   const dayChange = snapshot?.change24hPct ?? null;
-
-  const [smart, setSmart] = useState<Awaited<ReturnType<typeof loadPulses>>>(null);
-  useEffect(() => {
-    let live = true;
-    loadPulses([symbol]).then((next) => live && setSmart(next));
-    return () => {
-      live = false;
-    };
-  }, [symbol]);
-  const pulse = smart?.get(symbol.toUpperCase());
 
   const stats: { label: string; value: string }[] = [
     { label: "24h volume", value: snapshot ? compact(snapshot.volume24hUsd) : "—" },
@@ -148,12 +123,6 @@ export function Asset({ symbol, trader, onBack, onSelectTab, onStrategies }: Ass
     { label: "Fees maker · taker", value: snapshot ? `${snapshot.makerFeeBps.toFixed(1)} · ${snapshot.takerFeeBps.toFixed(1)} bps` : "—" },
     { label: "Bids within 25 bps", value: depth ? compact(depth.bidUsdWithin25Bps) : "—" },
     { label: "Asks within 25 bps", value: depth ? compact(depth.askUsdWithin25Bps) : "—" },
-    ...(pulse && pulse.tokens.length > 0
-      ? [
-          { label: "Smart money 7d (Nansen)", value: `${stanceLabel(pulse.stance)} ${flowText(pulse.flow7dUsd)}` },
-          { label: "Smart traders", value: String(pulse.traders) },
-        ]
-      : []),
   ];
 
   return (
@@ -164,8 +133,8 @@ export function Asset({ symbol, trader, onBack, onSelectTab, onStrategies }: Ass
       >
         <View style={styles.titleRow}>
           <RoundButton glyph="←" label="Back" light onPress={onBack} />
-          <Text style={styles.title}>{symbol}</Text>
-          <Tag label="Perpl perp" dot={tone.violet} />
+          <Text style={styles.title}>{displaySymbol(symbol)}</Text>
+          <Tag label={market?.dex ? `${market.dex} perp` : "Hyperliquid perp"} dot={tone.violet} />
         </View>
 
         {error !== null && <Text style={styles.error}>{error}</Text>}
@@ -174,10 +143,10 @@ export function Asset({ symbol, trader, onBack, onSelectTab, onStrategies }: Ass
           <View style={styles.head}>
             <AssetMark symbol={symbol} size={48} />
             <View style={styles.flex}>
-              <Text style={styles.name}>{market?.name ?? symbol}</Text>
-              <Text style={styles.onColorMuted}>Perpetual · AUSD margin</Text>
+              <Text style={styles.name}>{displaySymbol(symbol)}</Text>
+              <Text style={styles.onColorMuted}>Perpetual · USDC margin</Text>
             </View>
-            <Text style={styles.price}>{market ? px(market.mark) : "—"}</Text>
+            <Text style={styles.price}>{market ? px(market.markPx) : "—"}</Text>
           </View>
           <View style={styles.tags}>
             {dayChange !== null && (
@@ -215,20 +184,20 @@ export function Asset({ symbol, trader, onBack, onSelectTab, onStrategies }: Ass
           </View>
         </ToneCard>
 
-        {data !== null && <OrderTicket trader={trader} data={data} symbol={symbol} onOpened={() => refreshPositions(data)} />}
+        {data !== null && <OrderTicket trader={trader} data={data} symbol={symbol} onOpened={refreshPositions} />}
 
         {positions.map((entry) => {
-          const long = entry.position.positionType === perpl.OrderType.OpenLong;
+          const long = entry.size >= 0;
           return (
-            <ToneCard key={entry.market.perpId}>
+            <ToneCard key={`${entry.dex}:${entry.coin}`}>
               <View style={styles.head}>
                 <View style={styles.flex}>
                   <Text style={styles.sectionTitle}>YOUR {long ? "LONG" : "SHORT"}</Text>
                   <Text style={styles.muted}>
-                    {entry.position.lots} lots · entry {px(entry.position.entryPrice)} · margin {usd(entry.position.deposit)}
+                    {Math.abs(entry.size)} {displaySymbol(entry.coin)} · entry {px(entry.entryPx)} · margin {usd(entry.marginUsed)}
                   </Text>
                 </View>
-                <Text style={[styles.pnl, { color: entry.position.pnl >= 0 ? dark.green : dark.red }]}>{usd(entry.position.pnl)}</Text>
+                <Text style={[styles.pnl, { color: entry.unrealizedPnl >= 0 ? dark.green : dark.red }]}>{usd(entry.unrealizedPnl)}</Text>
               </View>
               <Pressable disabled={busy} onPress={() => void close(entry)} style={({ pressed }) => [styles.manage, pressed && styles.pressed]}>
                 <Text style={styles.manageLabel}>Close position</Text>
@@ -247,12 +216,12 @@ export function Asset({ symbol, trader, onBack, onSelectTab, onStrategies }: Ass
               </View>
             ))}
           </View>
-          <Text style={styles.muted}>Positive funding means longs pay shorts. Figures come from Perpl on Monad testnet.</Text>
+          <Text style={styles.muted}>Positive funding means longs pay shorts. Figures come from Hyperliquid testnet.</Text>
         </ToneCard>
 
         <Pressable onPress={() => onStrategies(symbol)} style={({ pressed }) => [styles.strategy, pressed && styles.pressed]}>
           <View style={styles.flex}>
-            <Text style={styles.sectionTitle}>TEST A STRATEGY ON {symbol}</Text>
+            <Text style={styles.sectionTitle}>TEST A STRATEGY ON {displaySymbol(symbol)}</Text>
             <Text style={styles.muted}>See what breakout, DCA, grid or trailing stop would have done.</Text>
           </View>
           <Text style={styles.chevron}>↗</Text>

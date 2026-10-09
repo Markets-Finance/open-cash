@@ -1,7 +1,7 @@
 <section class="access-section section-frame" id="network">
   <div class="section-heading">
     <h2>One terminal.<br />Every leg connected.</h2>
-    <p>For traders, bin builders, and developers composing positions across Perpl's markets on Monad.</p>
+    <p>For traders, bin builders, and developers composing positions across Hyperliquid's markets.</p>
   </div>
   <div class="access-columns">
     <article>
@@ -13,13 +13,13 @@
     <article>
       <span class="small-label">DEVELOPER INFRASTRUCTURE</span>
       <h3>Read the same markets.<br />Keep your own keys.</h3>
-      <p>Every bin is built from Perpl's on-chain market data, so each leg, weight and price is visible before you enter. OpenCash never receives a private key.</p>
+      <p>Every bin is built from Hyperliquid's public market data, so each leg, weight and price is visible before you enter. OpenCash never receives a private key.</p>
       <details>
         <summary>View integration overview <span aria-hidden="true">+</span></summary>
         <div class="integration-details">
-          <p>Market data is read straight from the Perpl exchange contract. Orders go to the same contract, sized to a whole lot before they are signed.</p>
+          <p>Market data is read from Hyperliquid's public API. Orders are signed by a trade-only key and sized to the market's lot step before they are sent.</p>
           <code>loadMarkets()<br />sizeBinFor(bin, margin, data)<br />openBin(trader, sized, data, onStep)<br />loadOpenPositions(owner, data)<br />closePosition(trader, position)</code>
-          <p>Perpl trading keys cannot withdraw, and every order runs on Monad testnet during early access.</p>
+          <p>The trading key cannot withdraw, and every order runs on Hyperliquid testnet during early access.</p>
         </div>
       </details>
     </article>

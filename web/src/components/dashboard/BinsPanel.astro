@@ -4,9 +4,25 @@
 <section class="panel" data-panel="bins" hidden>
   <div class="switcher" data-switcher="bins" role="tablist">
     <button type="button" data-switch="bins" aria-pressed="true"><i class="switcher__dot switcher__dot--butter"></i>Bins</button>
+    <button type="button" data-switch="ranks" aria-pressed="false"><i class="switcher__dot switcher__dot--violet"></i>Ranks</button>
   </div>
   <div data-pane="bins:bins">
     <p class="panel__lede">Each bin is a theme traded as a basket of Hyperliquid perps. Open one, or tap any asset to trade it alone.</p>
     <div data-bins-carousel class="carousel carousel--loading">Loading…</div>
+  </div>
+  <div data-pane="bins:ranks" hidden>
+    <div class="bots bots--wide">
+      <div class="card bots__create">
+        <span class="card__label">Leaderboard</span>
+        <p class="bots__note" data-ranks-note>Loading…</p>
+      </div>
+      <div class="table-wrap" data-ranks-table></div>
+      <div class="card bots__create">
+        <span class="card__label">Strategies</span>
+        <p class="bots__note" data-strategies-note>Loading…</p>
+      </div>
+      <div class="table-wrap" data-strategies-table></div>
+      <p class="agent__hint" data-strategies-status></p>
+    </div>
   </div>
 </section>

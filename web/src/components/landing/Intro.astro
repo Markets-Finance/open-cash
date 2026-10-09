@@ -9,19 +9,19 @@ import Mark from "../Mark.astro";
     <div class="phone">
       <div class="phone-top"><span>9:41</span><i></i><span>▰</span></div>
       <div class="phone-brand"><Mark /><span>open cash</span><span class="avatar">OC</span></div>
-      <small>AUSD balance</small><strong class="phone-balance">1,000<span>.00</span></strong>
+      <small>USDC balance</small><strong class="phone-balance">1,000<span>.00</span></strong>
       <div class="phone-actions"><span>Test</span><span>Run</span></div>
       <div class="mini-chart"><svg viewBox="0 0 240 90" aria-hidden="true"><path d="M0 78 16 70 30 74 45 52 59 58 75 36 89 45 105 29 120 38 135 19 150 29 167 12 180 21 199 9 215 15 240 2" /></svg></div>
-      <div class="phone-label">Perpl markets <span>Monad</span></div>
+      <div class="phone-label">Hyperliquid markets <span>Testnet</span></div>
       {phone.markets.map(([symbol, ticker, name]) => (
-        <div class="market-row"><span class="coin">{symbol}</span><span><b>{ticker}</b><small>{name}</small></span><span class="market-direction">Long <small>Perpl</small></span></div>
+        <div class="market-row"><span class="coin">{symbol}</span><span><b>{ticker}</b><small>{name}</small></span><span class="market-direction">Long <small>HL</small></span></div>
       ))}
       <div class="phone-label">Thematic bins <span>Explore</span></div><div class="phone-bin">OpenCash Sample Bin <span>↗</span></div>
     </div>
     <span class="preview-caption">Illustrative, not live market data</span>
   </div>
   <div class="intro-bottom">
-    <p>OpenCash is a web and phone app for trading Monad perps and assets on Perpl. Pick a theme or a rule-based strategy, test it on real Perpl history and with fake money, then run it under a hard spending cap.</p>
+    <p>OpenCash is a web and phone app for trading Hyperliquid perps, stocks and commodities. Pick a theme or a rule-based strategy, test it on real Hyperliquid history and with fake money, then run it under a hard spending cap.</p>
     <ul class="benefits"><li><span aria-hidden="true">↻</span>Test before you risk</li><li><span aria-hidden="true">▦</span>Bins and strategies</li><li><span aria-hidden="true">⌘</span>Passkey-signed calls</li></ul>
   </div>
 </section>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
-import { perpl } from "shared";
+import { coinLogoUrl, stockLogoUrl } from "shared";
 import { dark, family } from "../theme";
 
 type AssetMarkProps = {
@@ -11,7 +11,8 @@ type AssetMarkProps = {
 
 export function AssetMark({ symbol, size = 32, uri }: AssetMarkProps) {
   const [failed, setFailed] = useState(false);
-  const logoUrl = uri ?? perpl.marketLogoUrl(symbol);
+  const name = symbol.split(":").pop() ?? symbol;
+  const logoUrl = uri ?? (symbol.includes(":") ? stockLogoUrl(name) : coinLogoUrl(name));
   const showLogo = !failed;
 
   return (
@@ -30,7 +31,7 @@ export function AssetMark({ symbol, size = 32, uri }: AssetMarkProps) {
         />
       ) : (
         <Text style={[styles.markText, { fontSize: size * 0.42 }]}>
-          {symbol.slice(0, 1).toUpperCase()}
+          {name.slice(0, 1).toUpperCase()}
         </Text>
       )}
     </View>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { defaultLimits, templates } from "shared";
+import * as templates from "shared";
+import { defaultLimits } from "shared";
 import { addPaper, loadPapers, loadSeries } from "../lib/lab";
 import { toolbox } from "../lib/bots";
 import { dark, family, space, touch } from "../theme";
@@ -111,7 +112,7 @@ export function StrategyLab({ onOpenAsset, initialSymbol }: { onOpenAsset: (symb
     toolbox
       .getMarkets()
       .then((markets) => {
-        const names = markets.map((m) => m.symbol);
+        const names = markets.map((m) => m.name);
         setSymbols(names);
         setSymbol(initialSymbol && names.includes(initialSymbol) ? initialSymbol : names.includes("BTC") ? "BTC" : (names[0] ?? ""));
       })
@@ -134,7 +135,7 @@ export function StrategyLab({ onOpenAsset, initialSymbol }: { onOpenAsset: (symb
 
   function startPaper() {
     if (!series) return;
-    addPaper(templates.paperFromBot(`${template.name} · ${series.market.symbol}`, template.id, series.market.symbol, series.resolution, { ...paramsFor(template) }, allocation, Date.now()));
+    addPaper(templates.paperFromBot(`${template.name} · ${series.market.name}`, template.id, series.market.name, series.resolution, { ...paramsFor(template) }, allocation, Date.now()));
     setNote("Paper bot started. It is below.");
   }
 
@@ -161,7 +162,7 @@ export function StrategyLab({ onOpenAsset, initialSymbol }: { onOpenAsset: (symb
       </ScrollView>
 
       {error !== null && <Text style={styles.error}>{error}</Text>}
-      {series === null && error === null && <Text style={styles.muted}>Loading Perpl history.</Text>}
+      {series === null && error === null && <Text style={styles.muted}>Loading Hyperliquid history.</Text>}
 
       {series !== null && result && (
         <>
@@ -197,7 +198,7 @@ export function StrategyLab({ onOpenAsset, initialSymbol }: { onOpenAsset: (symb
               );
             })}
           </View>
-          <Text style={styles.muted}>Result over the last 30 days of {series.market.symbol} on Perpl testnet, after fees and funding. Tap one to see how it works.</Text>
+          <Text style={styles.muted}>Result over the last 30 days of {series.market.name} on Hyperliquid testnet, after fees and funding. Tap one to see how it works.</Text>
 
           <View style={styles.detail}>
             <View style={[styles.accent, { backgroundColor: fill }]} />
@@ -207,7 +208,7 @@ export function StrategyLab({ onOpenAsset, initialSymbol }: { onOpenAsset: (symb
             <Text style={styles.label}>30-DAY RESULT</Text>
             <Text style={[styles.big, { color: result.metrics.returnPct >= 0 ? dark.green : dark.red }]}>{pct(result.metrics.returnPct)}</Text>
             <Text style={styles.summary}>
-              ${allocation} would have become ${(allocation + result.metrics.netPnlUsd).toFixed(2)}. Just holding {series.market.symbol} returned {pct(result.metrics.holdReturnPct)}.
+              ${allocation} would have become ${(allocation + result.metrics.netPnlUsd).toFixed(2)}. Just holding {series.market.name} returned {pct(result.metrics.holdReturnPct)}.
             </Text>
 
             <Text style={styles.label}>DAY BY DAY, LAST 7 DAYS</Text>

@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { estimateExecution, liquidationDistancePct, slippageWarnBps, type MarketSnapshot, type perpl, type TradingAccount } from "shared";
-import { toolbox } from "../lib/bots";
-import { loadAccount, loadSpendableBalance, openBin, singleLegBin, sizeBinFor, type MarketData } from "../lib/perpl";
+import { estimateMarketOrder, liquidationDistancePct, maxOrderNotionalUsd, openBin, sizeBin, slippageWarnBps, type Bin, type Book, type MarketSnapshot, type TradingAccount } from "shared";
+import { agentExchange } from "../lib/hl";
+import { displaySymbol, loadAccountDesk, loadMarketView, type MarketData } from "../lib/market";
 import { dark, family, space, touch, track } from "../theme";
 import { LeverageSlider, riskColor } from "./LeverageSlider";
 import { CardTitle, ToneCard, tone } from "./ui";
 
 type Direction = "long" | "short";
 type Status = { text: string; failed: boolean } | null;
+
+function singleLegBin(coin: string, direction: Direction, leverage: number): Bin {
+  return { id: `single:${coin}`, name: displaySymbol(coin), thesis: "", legs: [{ symbol: coin, direction, weightBps: 10000, leverage }] };
+}
 
 const quickShares = [0.25, 0.5, 0.75, 1];
 
@@ -43,16 +47,15 @@ export function OrderTicket({ trader, data, symbol, initialDirection, onOpened }
   const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<Status>(null);
-  const [book, setBook] = useState<perpl.Book | null>(null);
+  const [book, setBook] = useState<Book | null>(null);
   const [snapshot, setSnapshot] = useState<MarketSnapshot | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [available, setAvailable] = useState<number | null>(null);
-  const [maintenance, setMaintenance] = useState<number | null>(null);
 
   useEffect(() => {
     let live = true;
-    Promise.all([loadSpendableBalance(trader.address), loadAccount(trader.address)])
-      .then(([wallet, account]) => live && setAvailable(wallet + (account?.balance ?? 0)))
+    loadAccountDesk(trader.address, true)
+      .then((desk) => live && setAvailable(Math.max(0, desk.equity - desk.positions.reduce((sum, p) => sum + p.marginUsed, 0))))
       .catch(() => live && setAvailable(null));
     return () => {
       live = false;
@@ -61,31 +64,27 @@ export function OrderTicket({ trader, data, symbol, initialDirection, onOpened }
 
   useEffect(() => {
     let live = true;
-    setMaintenance(null);
-    toolbox.getMarket(symbol).then((next) => live && setMaintenance(next.maintenanceLeverage)).catch(() => {});
-    return () => {
-      live = false;
-    };
-  }, [symbol]);
-
-  useEffect(() => {
-    let live = true;
     setBook(null);
     setSnapshot(null);
-    toolbox.getBook(symbol).then((next) => live && setBook(next)).catch(() => {});
-    toolbox.getSnapshot(symbol).then(({ snapshot: next }) => live && setSnapshot(next)).catch(() => {});
+    loadMarketView(symbol, trader.address)
+      .then((view) => {
+        if (!live) return;
+        setBook(view.book);
+        setSnapshot(view.snapshot);
+      })
+      .catch(() => {});
     return () => {
       live = false;
     };
   }, [symbol]);
 
   const market = data.markets.get(symbol) ?? null;
-  const cap = data.maxLeverage.get(symbol) ?? leverage;
+  const cap = market?.maxLeverage ?? leverage;
   const margin = Number(amount) || 0;
 
   const preview = useMemo(() => {
     if (!market || margin <= 0) return null;
-    return sizeBinFor(singleLegBin(symbol, direction, Math.min(leverage, cap)), margin, data);
+    return sizeBin(singleLegBin(symbol, direction, Math.min(leverage, cap)), margin, data.markets);
   }, [data, market, symbol, direction, leverage, cap, margin]);
 
   const leg = preview?.sized.legs[0] ?? null;
@@ -94,13 +93,7 @@ export function OrderTicket({ trader, data, symbol, initialDirection, onOpened }
 
   const estimate = useMemo(() => {
     if (!book || !snapshot || !leg) return null;
-    return estimateExecution({
-      book,
-      side: direction === "long" ? "buy" : "sell",
-      notionalUsd: leg.notional,
-      takerFeeBps: snapshot.takerFeeBps,
-      fundingAprPct: snapshot.funding.nowAprPct,
-    });
+    return estimateMarketOrder(book, snapshot, direction === "long" ? "buy" : "sell", leg.notional);
   }, [book, snapshot, leg, direction]);
 
   const risky = estimate !== null && (estimate.slippageBps === null || estimate.slippageBps > slippageWarnBps);
@@ -116,10 +109,11 @@ export function OrderTicket({ trader, data, symbol, initialDirection, onOpened }
     setBusy(true);
     setStatus({ text: "Sending…", failed: false });
     try {
-      await openBin(trader, preview.sized, data, (step) =>
-        setStatus({ text: step === "orders" ? "Opening position…" : "Funding account…", failed: false }),
-      );
-      setStatus({ text: `${direction === "long" ? "Long" : "Short"} ${symbol} is open.`, failed: false });
+      const exchange = await agentExchange(trader);
+      setStatus({ text: "Opening position…", failed: false });
+      const [result] = await openBin(exchange, preview.sized, data.markets, { maxNotionalUsd: maxOrderNotionalUsd });
+      if (!result || result.error) throw new Error(result?.error ?? "The order was not accepted.");
+      setStatus({ text: `${direction === "long" ? "Long" : "Short"} ${displaySymbol(symbol)} is open.`, failed: false });
       setAmount("");
       onOpened();
     } catch (error) {
@@ -168,7 +162,7 @@ export function OrderTicket({ trader, data, symbol, initialDirection, onOpened }
             placeholderTextColor={dark.muted}
             style={styles.input}
           />
-          <Text style={styles.unit}>AUSD</Text>
+          <Text style={styles.unit}>USDC</Text>
         </View>
         <View style={styles.quick}>
           {quickShares.map((share) => (
@@ -190,16 +184,16 @@ export function OrderTicket({ trader, data, symbol, initialDirection, onOpened }
           <Text style={[styles.levValue, { color: riskColor(level, cap) }]}>{level}x</Text>
         </View>
         <LeverageSlider value={level} max={cap} onChange={setLeverage} />
-        {maintenance !== null && (
+        {market && (
           <Text style={styles.muted}>
-            About a {liquidationDistancePct(level, maintenance).toFixed(1)}% move against you liquidates this position.
+            About a {liquidationDistancePct(level, market.maxLeverage).toFixed(1)}% move against you liquidates this position.
           </Text>
         )}
       </View>
 
       {leg !== null && (
         <Text style={styles.muted}>
-          {leg.lots} {symbol} · {usd(leg.notional)} position
+          {leg.size} {displaySymbol(symbol)} · {usd(leg.notional)} position
         </Text>
       )}
       {estimate !== null && (

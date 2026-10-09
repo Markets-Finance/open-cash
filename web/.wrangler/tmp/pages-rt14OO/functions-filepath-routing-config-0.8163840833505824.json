@@ -1,0 +1,13 @@
+{
+  "routes": [
+    {
+      "routePath": "/waitlist",
+      "mountPath": "/",
+      "method": "POST",
+      "module": [
+        "waitlist.ts:onRequestPost"
+      ]
+    }
+  ],
+  "baseURL": "/"
+}

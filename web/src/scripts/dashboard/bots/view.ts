@@ -41,6 +41,7 @@ export function renderBot(bot: Bot): string {
       <span class="pill pill--${bot.status}">${bot.status}</span>
       <span class="bot__spacer"></span>
       <button type="button" class="btn ${bot.enabled ? "" : "btn--primary"}" data-bot-toggle>${bot.enabled ? "Stop" : "Start"}</button>
+      <button type="button" class="link-btn" data-bot-share>Share</button>
       <button type="button" class="link-btn" data-bot-server>Run on server</button>
       <button type="button" class="link-btn" data-bot-delete>Delete</button>
     </div>

@@ -1,60 +1,34 @@
-import {
-  coinLogoUrl,
-  createHlExchange,
-  createHlInfo,
-  getAccount,
-  getSpotBalances,
-  loadCandles as loadHlCandles,
-  loadDesk as loadHlDesk,
-  loadTradeMarkets as loadHlMarkets,
-  type ChartRangeKey,
-  type HlWallet,
-} from "shared";
-import type { Address } from "viem";
-
-export { coinLogoUrl };
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { createHlExchange, createHlInfo, type TradingAccount } from "shared";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 export const hlNetwork = "testnet";
+export const info = createHlInfo(hlNetwork);
 
-export const fallbackCoins = ["BTC", "HYPE", "USDC", "ETH"];
-
-const info = createHlInfo(hlNetwork);
+const agentName = "OpenCash";
+const keyFor = (owner: string) => `opencash.hl.agent.${hlNetwork}.${owner.toLowerCase()}`;
 
 export type HlExchange = ReturnType<typeof createHlExchange>;
 
-let wallet: HlWallet | null = null;
-
-export function getExchange(): HlExchange | null {
-  return wallet ? createHlExchange(hlNetwork, wallet) : null;
+export function mainExchange(trader: TradingAccount): HlExchange {
+  return createHlExchange(hlNetwork, trader.account);
 }
 
-export const loadTradeMarkets = () => loadHlMarkets(info);
-export const loadCandles = (coin: string, range: ChartRangeKey) => loadHlCandles(info, coin, range);
-export const loadDesk = (user: Address) => loadHlDesk(info, user);
+export async function agentReady(trader: TradingAccount): Promise<boolean> {
+  const key = (await AsyncStorage.getItem(keyFor(trader.address))) as `0x${string}` | null;
+  if (!key) return false;
+  const agents = await info.extraAgents({ user: trader.address });
+  const address = privateKeyToAccount(key).address.toLowerCase();
+  const now = Date.now();
+  return agents.some((a) => a.address.toLowerCase() === address && (a.validUntil === null || a.validUntil > now));
+}
 
-export type HlSummary = {
-  total: number;
-  unrealizedPnl: number;
-  coins: string[];
-};
-
-export async function loadHlSummary(user: Address): Promise<HlSummary> {
-  const [main, xyz, spot] = await Promise.all([
-    getAccount(info, user),
-    getAccount(info, user, "xyz"),
-    getSpotBalances(info, user),
-  ]);
-  const positions = [...main.positions, ...xyz.positions];
-  const spotUsdc = spot.find((b) => b.coin === "USDC")?.total ?? 0;
-  const held = [
-    ...positions
-      .sort((a, b) => b.positionValue - a.positionValue)
-      .map((p) => p.coin.split(":").pop()!),
-    ...spot.filter((b) => b.total > 0).map((b) => b.coin),
-  ];
-  return {
-    total: main.equity + xyz.equity + spotUsdc,
-    unrealizedPnl: positions.reduce((sum, p) => sum + p.unrealizedPnl, 0),
-    coins: [...new Set([...held, ...fallbackCoins])].slice(0, 4),
-  };
+export async function agentExchange(trader: TradingAccount): Promise<HlExchange> {
+  let key = (await AsyncStorage.getItem(keyFor(trader.address))) as `0x${string}` | null;
+  if (!key || !(await agentReady(trader))) {
+    key = generatePrivateKey();
+    await mainExchange(trader).approveAgent({ agentAddress: privateKeyToAccount(key).address, agentName });
+    await AsyncStorage.setItem(keyFor(trader.address), key);
+  }
+  return createHlExchange(hlNetwork, privateKeyToAccount(key));
 }

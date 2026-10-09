@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { bins, type BinPosition, type TradingAccount } from "shared";
+import { bins, type HlPosition, type TradingAccount } from "shared";
 import { AddressMark } from "../components/AddressMark";
-import { AssetMark, LegStack } from "../components/AssetMark";
+import { AssetMark } from "../components/AssetMark";
 import { TabBar, tabBarHeight, type TabKey } from "../components/TabBar";
 import { ArrowBadge, CardTitle, RoundButton, Tag, ToneCard, tone } from "../components/ui";
-import { loadMarkets, loadPositions, loadSummary, type MarketData, type PortfolioSummary } from "../lib/perpl";
+import { displaySymbol, loadAccountDesk, loadMarkets, loadSummary, type MarketData } from "../lib/market";
 import { dark, family, space, touch, track } from "../theme";
 
 const featuredSymbols = [...new Set(bins.flatMap((bin) => bin.legs.map((leg) => leg.symbol)))];
@@ -38,8 +38,8 @@ function money(value: number): { whole: string; cents: string } {
 
 export function Home({ trader, name, onSelectTab, onOpenAsset, onDeposit, onSend }: HomeProps) {
   const insets = useSafeAreaInsets();
-  const [summary, setSummary] = useState<PortfolioSummary | null>(null);
-  const [positions, setPositions] = useState<BinPosition[] | null>(null);
+  const [summary, setSummary] = useState<Awaited<ReturnType<typeof loadSummary>> | null>(null);
+  const [positions, setPositions] = useState<HlPosition[] | null>(null);
   const [data, setData] = useState<MarketData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,10 +48,10 @@ export function Home({ trader, name, onSelectTab, onOpenAsset, onDeposit, onSend
     loadMarkets()
       .then((markets) => {
         if (live) setData(markets);
-        loadSummary(trader.address, markets).then((next) => live && setSummary(next)).catch(() => live && setSummary(null));
-        return loadPositions(trader.address, markets);
+        loadSummary(trader).then((next) => live && setSummary(next)).catch(() => live && setSummary(null));
+        return loadAccountDesk(trader.address, true);
       })
-      .then((held) => live && setPositions(held))
+      .then((desk) => live && setPositions(desk.positions))
       .catch((cause) => live && setError(String(cause)));
     return () => {
       live = false;
@@ -87,7 +87,7 @@ export function Home({ trader, name, onSelectTab, onOpenAsset, onDeposit, onSend
             <View style={[styles.dot, styles.dotBottomLeft]} />
             <View style={[styles.dot, styles.dotBottomRight]} />
             <View style={styles.coinStack}>
-              {(summary?.symbols.length ? summary.symbols : listed).slice(0, 4).map((coin, index) => (
+              {(summary?.symbols.length ? summary.symbols : listed).slice(0, 4).map((coin: string, index: number) => (
                 <View key={coin} style={[styles.walletCoin, index > 0 && styles.walletCoinOverlap]}>
                   <AssetMark symbol={coin} size={28} />
                 </View>
@@ -128,18 +128,18 @@ export function Home({ trader, name, onSelectTab, onOpenAsset, onDeposit, onSend
           </View>
           <View style={styles.marketList}>
             {listed.map((symbol) => {
-              const mark = data?.markets.get(symbol)?.mark;
-              const leverage = data?.maxLeverage.get(symbol);
+              const mark = data?.markets.get(symbol)?.markPx;
+              const leverage = data?.markets.get(symbol)?.maxLeverage;
               return (
                 <Pressable
                   key={symbol}
                   onPress={() => onOpenAsset(symbol)}
                   accessibilityRole="button"
-                  accessibilityLabel={`Trade ${symbol}`}
+                  accessibilityLabel={`Trade ${displaySymbol(symbol)}`}
                   style={({ pressed }) => [styles.marketRow, pressed && styles.pressed]}
                 >
                   <AssetMark symbol={symbol} size={26} />
-                  <Text style={styles.marketSymbol}>{symbol}</Text>
+                  <Text style={styles.marketSymbol}>{displaySymbol(symbol)}</Text>
                   <Text style={styles.marketPrice}>{mark === undefined ? "—" : px(mark)}</Text>
                   <View style={styles.levTag}>
                     <Text style={styles.levText}>{leverage === undefined ? "—" : `${leverage}x`}</Text>
@@ -167,21 +167,21 @@ export function Home({ trader, name, onSelectTab, onOpenAsset, onDeposit, onSend
         ) : positions === null ? (
           <ActivityIndicator color={dark.ink} />
         ) : positions.length === 0 ? (
-          <Text style={styles.muted}>No open positions yet. Open a bin to take a view.</Text>
+          <Text style={styles.muted}>No open positions yet. Open a bin or place a trade.</Text>
         ) : (
           positions.map((position) => (
-            <ToneCard key={position.bin.id}>
+            <ToneCard key={`${position.dex}:${position.coin}`}>
               <View style={styles.cardHead}>
-                <LegStack symbols={position.legs.map((leg) => leg.symbol)} size={30} />
+                <AssetMark symbol={position.coin} size={30} />
                 <View style={styles.headText}>
-                  <Text style={styles.positionName}>{position.bin.name.toUpperCase()}</Text>
-                  <Text style={styles.muted}>{position.legs.map((leg) => leg.symbol).join(", ")}</Text>
+                  <Text style={styles.positionName}>{position.size >= 0 ? "LONG" : "SHORT"} {displaySymbol(position.coin).toUpperCase()}</Text>
+                  <Text style={styles.muted}>{position.leverage}x {position.leverageType}</Text>
                 </View>
-                <ArrowBadge label="Open in Trade" onPress={() => onOpenAsset(position.legs[0]?.symbol ?? "BTC")} />
+                <ArrowBadge label="Open in Trade" onPress={() => onOpenAsset(position.coin)} />
               </View>
               <View style={styles.tagRow}>
-                <Tag label={`Value ${usd(position.deposit + position.pnl)}`} />
-                <Tag label={`PnL ${position.pnl >= 0 ? "+" : "−"}${usd(Math.abs(position.pnl))}`} dot={position.pnl >= 0 ? dark.green : dark.red} />
+                <Tag label={`Value ${usd(position.marginUsed + position.unrealizedPnl)}`} />
+                <Tag label={`PnL ${position.unrealizedPnl >= 0 ? "+" : "−"}${usd(Math.abs(position.unrealizedPnl))}`} dot={position.unrealizedPnl >= 0 ? dark.green : dark.red} />
               </View>
             </ToneCard>
           ))

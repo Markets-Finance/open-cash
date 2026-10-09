@@ -2,20 +2,19 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   createBot,
   createBotRuntime,
+  createHlBotDeps,
   createToolbox,
   defaultLimits,
-  perpl,
+  maxOrderNotionalUsd,
   ruleDrafter,
   type Bot,
   type BotMode,
   type BotRuntime,
   type TradingAccount,
 } from "shared";
-import { pulseList } from "./nansen";
-import { terminal } from "./perpl";
+import { agentExchange, agentReady, info } from "./hl";
 
-export const toolbox = createToolbox(perpl.createPerplApi(perpl.perplTestnet.apiUrl), defaultLimits);
-toolbox.setSmartMoney(pulseList);
+export const toolbox = createToolbox(info, defaultLimits);
 
 let runtime: BotRuntime | null = null;
 let owner: string | null = null;
@@ -36,17 +35,15 @@ export function subscribeBots(listener: (bots: Bot[]) => void): () => void {
   };
 }
 
-export async function startBots(trader: TradingAccount): Promise<void> {
-  runtime?.stop();
-  owner = trader.address;
-  signer = trader;
+async function ensureRuntime(): Promise<BotRuntime> {
+  if (runtime) return runtime;
+  if (!signer) throw new Error("Not signed in.");
+  const trader = signer;
+  const exchange = await agentExchange(trader);
   const key = `opencash.bots.${trader.address.toLowerCase()}`;
   runtime = createBotRuntime({
-    terminal,
-    toolbox,
-    trader,
+    deps: createHlBotDeps({ info, exchange, user: trader.address, toolbox, maxNotionalUsd: maxOrderNotionalUsd }),
     onChange: notify,
-    smartPulses: pulseList,
     storage: {
       load: async () => {
         try {
@@ -60,6 +57,15 @@ export async function startBots(trader: TradingAccount): Promise<void> {
   });
   await runtime.init();
   runtime.start();
+  return runtime;
+}
+
+export async function startBots(trader: TradingAccount): Promise<void> {
+  runtime?.stop();
+  runtime = null;
+  owner = trader.address;
+  signer = trader;
+  if (await agentReady(trader).catch(() => false)) await ensureRuntime();
 }
 
 export const currentOwner = () => owner;
@@ -73,22 +79,23 @@ export function stopBots(): void {
   notify([]);
 }
 
-export async function draftBot(prompt: string, mode: BotMode, signal: "nansen" | null = null): Promise<string | null> {
-  const symbols = (await toolbox.getMarkets()).map((m) => m.symbol);
-  const card = await ruleDrafter(prompt, symbols);
-  if (card === null || runtime === null) {
-    return `Name a market and a side, like "long MON short BTC 2x $100 stop 8%". Markets: ${symbols.join(", ")}.`;
+export async function draftBot(prompt: string, mode: BotMode): Promise<string | null> {
+  const names = (await toolbox.getMarkets()).map((m) => m.name);
+  const card = await ruleDrafter(prompt, names);
+  if (card === null) {
+    return `Name a market and a side, like "long ETH short BTC 2x $100 stop 8%". Markets: ${names.slice(0, 12).join(", ")}.`;
   }
-  await runtime.add(createBot(card.name, mode, signal ? { ...card, signal } : card, Date.now()));
+  const active = await ensureRuntime();
+  await active.add(createBot(card.name, mode, card, Date.now()));
   return null;
 }
 
 export async function addBotFromCard(card: Bot["card"], mode: BotMode): Promise<void> {
-  if (runtime === null) throw new Error("Bots are not running yet");
-  await runtime.add(createBot(card.name, mode, card, Date.now()));
+  const active = await ensureRuntime();
+  await active.add(createBot(card.name, mode, card, Date.now()));
 }
 
-export const setBotEnabled = (id: string, enabled: boolean) => runtime?.setEnabled(id, enabled);
-export const removeBot = (id: string) => runtime?.remove(id);
-export const updateBotRules = (id: string, rules: Partial<Bot["rules"]>) =>
-  runtime?.update(id, (bot) => ({ ...bot, rules: { ...bot.rules, ...rules } }));
+export const setBotEnabled = async (id: string, enabled: boolean) => (await ensureRuntime()).setEnabled(id, enabled);
+export const removeBot = async (id: string) => (await ensureRuntime()).remove(id);
+export const updateBotRules = async (id: string, rules: Partial<Bot["rules"]>) =>
+  (await ensureRuntime()).update(id, (bot) => ({ ...bot, rules: { ...bot.rules, ...rules } }));

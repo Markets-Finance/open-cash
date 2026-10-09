@@ -8,12 +8,13 @@ import { StrategyLab } from "../components/StrategyLab";
 import { TabBar, tabBarHeight, type TabKey } from "../components/TabBar";
 import { CardTitle, RoundButton, ScreenTitle, SelectPill, Switcher, Tag, ToneCard, tone } from "../components/ui";
 import { draftBot, removeBot, setBotEnabled, subscribeBots, updateBotRules } from "../lib/bots";
+import { publishStrategy } from "../lib/ranks";
 import { dark, family, space, touch } from "../theme";
 
-const explorer = "https://testnet.monadexplorer.com/tx/";
+const explorer = "https://app.hyperliquid-testnet.xyz/explorer/tx/";
 
 const ideas = [
-  { text: "long MON short BTC 2x $100 stop 8%", fill: tone.sky },
+  { text: "long ETH short BTC 2x $100 stop 8%", fill: tone.sky },
   { text: "long ETH 3x $50 stop 6% tp 12%", fill: tone.lime },
   { text: "short SOL 2x $80 stop 10%", fill: tone.butter },
 ];
@@ -35,7 +36,6 @@ export function Bots({ name, labSymbol, onSelectTab, onOpenAsset }: BotsProps) {
   const [bots, setBots] = useState<Bot[]>([]);
   const [prompt, setPrompt] = useState("");
   const [mode, setMode] = useState<BotMode>("guard");
-  const [signal, setSignal] = useState<"nansen" | null>(null);
   const [hint, setHint] = useState<string | null>(null);
   const [view, setView] = useState<"strategies" | "agent">("strategies");
 
@@ -48,7 +48,7 @@ export function Bots({ name, labSymbol, onSelectTab, onOpenAsset }: BotsProps) {
       return;
     }
     try {
-      const problem = await draftBot(prompt, mode, signal);
+      const problem = await draftBot(prompt, mode);
       if (problem) setHint(problem);
       else {
         setPrompt("");
@@ -119,14 +119,6 @@ export function Bots({ name, labSymbol, onSelectTab, onOpenAsset }: BotsProps) {
             <SelectPill label="Auto" active={mode === "auto"} onPress={() => setMode("auto")} />
             <Text style={styles.modeNote} numberOfLines={2}>
               {mode === "guard" ? "Closes at your stop or target." : "Opens on funding carry, then guards."}
-            </Text>
-          </View>
-
-          <View style={styles.modes}>
-            <SelectPill label="No signal" active={signal === null} onPress={() => setSignal(null)} />
-            <SelectPill label="Nansen" active={signal === "nansen"} onPress={() => setSignal("nansen")} />
-            <Text style={styles.modeNote} numberOfLines={2}>
-              {signal === "nansen" ? "Opens only when smart money agrees." : "Optional: gate trades on smart money."}
             </Text>
           </View>
 
@@ -229,6 +221,16 @@ export function Bots({ name, labSymbol, onSelectTab, onOpenAsset }: BotsProps) {
                   style={({ pressed }) => [styles.action, { backgroundColor: bot.enabled ? tone.paper : tone.coral }, pressed && styles.pressed]}
                 >
                   <Text style={styles.actionLabel}>{bot.enabled ? "Stop" : "Start"}</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() =>
+                    void publishStrategy(bot.card)
+                      .then((shared) => setHint(`Shared as strategy ${shared.id}. It appears under Ranks in Bins.`))
+                      .catch((error) => setHint(error instanceof Error ? error.message : String(error)))
+                  }
+                  style={({ pressed }) => [styles.action, styles.actionQuiet, pressed && styles.pressed]}
+                >
+                  <Text style={styles.actionQuietLabel}>Share</Text>
                 </Pressable>
                 <Pressable onPress={() => void removeBot(bot.id)} style={({ pressed }) => [styles.action, styles.actionQuiet, pressed && styles.pressed]}>
                   <Text style={styles.actionQuietLabel}>Delete</Text>

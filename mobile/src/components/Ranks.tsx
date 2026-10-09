@@ -44,17 +44,17 @@ export function Ranks({ onOpenAsset }: { onOpenAsset?: (symbol: string) => void 
       {board === null && error === null && <ActivityIndicator color={dark.ink} />}
       {board !== null && (
         <Text style={styles.muted}>
-          Perpl on Monad {board.network}, last {board.windowHours} hours. Net PnL after fees and funding, from on-chain events. Needs 5 closed trades and $1,000 volume.
+          Hyperliquid {board.network}, last {Math.round(board.windowHours / 24)} days. Profit and volume from Hyperliquid's own stats. Wallets with at least $10,000 in the account.
         </Text>
       )}
-      {board !== null && board.rows.length === 0 && <Text style={styles.muted}>No account has met the minimum yet.</Text>}
+      {board !== null && board.rows.length === 0 && <Text style={styles.muted}>No wallet has met the minimum yet.</Text>}
       {board?.rows.map((row) => (
-        <View key={row.accountId} style={styles.row}>
+        <View key={row.address ?? row.rank} style={styles.row}>
           <Text style={styles.rank}>{row.rank}</Text>
           <View style={styles.rowBody}>
-            <Text style={styles.name}>{row.handle ? `@${row.handle} ✓` : row.address ? short(row.address) : `Account ${row.accountId}`}</Text>
+            <Text style={styles.name}>{row.handle ? `@${row.handle} ✓` : row.address ? short(row.address) : "Unknown"}</Text>
             <Text style={styles.muted}>
-              {(row.winRate * 100).toFixed(0)}% wins · {row.closedTrades} trades · ${Math.round(row.volumeUsd).toLocaleString()} volume
+              {row.roiPct.toFixed(1)}% return · ${Math.round(row.equityUsd).toLocaleString()} account · ${Math.round(row.volumeUsd).toLocaleString()} volume
             </Text>
           </View>
           <Text style={[styles.value, row.netPnlUsd < 0 && styles.down]}>{money(row.netPnlUsd)}</Text>

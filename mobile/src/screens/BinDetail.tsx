@@ -9,12 +9,11 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { planBin, weightModes, type Bin, type BinSizingIssue, type SizedBin, type TradingAccount, type WeightMode } from "shared";
-import { toolbox } from "../lib/bots";
-import { agreementFor, flowText, loadPulses, stanceLabel } from "../lib/nansen";
+import { closeBin, hlBinInputSource, maxOrderNotionalUsd, openBin, planBin, weightModes, type Bin, type BinSizingIssue, type SizedBin, type TradingAccount, type WeightMode } from "shared";
+import { agentExchange, info } from "../lib/hl";
 import { SelectPill } from "../components/ui";
 import { AssetMark, LegStack } from "../components/AssetMark";
-import { openBin, type EntryStep, type MarketData } from "../lib/perpl";
+import { displaySymbol, loadAccountDesk, type MarketData } from "../lib/market";
 import { dark, family, space, track } from "../theme";
 
 type BinDetailProps = {
@@ -25,11 +24,7 @@ type BinDetailProps = {
   onBack: () => void;
 };
 
-const stepLabels: Record<EntryStep, string> = {
-  approve: "Approving AUSD…",
-  fund: "Funding the account…",
-  orders: "Opening every leg…",
-};
+const inputSource = hlBinInputSource(info);
 
 const presets = [10, 25, 50, 100];
 
@@ -44,15 +39,6 @@ export function BinDetail({ bin, data, balance, trader, onBack }: BinDetailProps
   const [result, setResult] = useState<{ sized: SizedBin; issues: BinSizingIssue[]; usedMode: WeightMode } | null>(null);
 
   const marginAmount = Number(amount) || 0;
-  const [pulses, setPulses] = useState<Awaited<ReturnType<typeof loadPulses>>>(null);
-
-  useEffect(() => {
-    let live = true;
-    loadPulses(bin.legs.map((leg) => leg.symbol)).then((next) => live && setPulses(next));
-    return () => {
-      live = false;
-    };
-  }, [bin]);
 
   useEffect(() => {
     if (marginAmount <= 0) {
@@ -61,7 +47,7 @@ export function BinDetail({ bin, data, balance, trader, onBack }: BinDetailProps
     }
     let live = true;
     setSizing(true);
-    planBin(toolbox, bin, marginAmount, data, mode)
+    planBin(inputSource, bin, marginAmount, data.markets, mode)
       .then((next) => live && setResult(next))
       .catch(() => live && setResult(null))
       .finally(() => live && setSizing(false));
@@ -75,8 +61,21 @@ export function BinDetail({ bin, data, balance, trader, onBack }: BinDetailProps
     setBusy(true);
     setFailed(false);
     try {
-      await openBin(trader, result.sized, data, (step) => setStatus(stepLabels[step]));
-      setStatus(`${bin.name} is open.`);
+      const exchange = await agentExchange(trader);
+      setStatus("Opening every leg…");
+      const results = await openBin(exchange, result.sized, data.markets, { maxNotionalUsd: maxOrderNotionalUsd });
+      const failedLegs = results.filter((r) => r.error !== null);
+      const filled = results.filter((r) => r.error === null);
+      if (failedLegs.length === 0) {
+        setStatus(`${bin.name} is open.`);
+      } else {
+        if (filled.length > 0) {
+          const open = (await loadAccountDesk(trader.address, true)).positions.filter((p) => filled.some((r) => r.symbol === p.coin));
+          await closeBin(exchange, open, data.markets, { maxNotionalUsd: maxOrderNotionalUsd });
+        }
+        setFailed(true);
+        setStatus(`Not opened: ${failedLegs.map((r) => `${displaySymbol(r.symbol)} ${r.error}`).join(" · ")}. Any leg that filled was closed.`);
+      }
     } catch (error) {
       setFailed(true);
       setStatus(error instanceof Error ? error.message : String(error));
@@ -144,28 +143,10 @@ export function BinDetail({ bin, data, balance, trader, onBack }: BinDetailProps
           </View>
           {balance !== null ? (
             <Text style={styles.balance}>
-              AUSD balance ${balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              USDC available ${balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}
             </Text>
           ) : null}
         </View>
-
-        {pulses !== null && (
-          <View style={styles.pulseBox}>
-            <Text style={styles.fieldLabel}>SMART MONEY, 7 DAYS (NANSEN)</Text>
-            <Text style={styles.pulseLabel}>{agreementFor(bin.legs, [...pulses.values()]).label}</Text>
-            {bin.legs.map((leg) => {
-              const pulse = pulses.get(leg.symbol.toUpperCase());
-              if (!pulse || pulse.tokens.length === 0) return null;
-              return (
-                <View key={leg.symbol} style={styles.pulseRow}>
-                  <Text style={styles.pulseSymbol}>{leg.symbol}</Text>
-                  <Text style={[styles.pulseStance, { color: pulse.stance === "buying" ? dark.green : pulse.stance === "selling" ? dark.red : dark.muted }]}>{stanceLabel(pulse.stance)}</Text>
-                  <Text style={styles.pulseFlow}>{flowText(pulse.flow7dUsd)}</Text>
-                </View>
-              );
-            })}
-          </View>
-        )}
 
         <View style={styles.modes}>
           {weightModes.map((item) => (
@@ -187,7 +168,7 @@ export function BinDetail({ bin, data, balance, trader, onBack }: BinDetailProps
                 <AssetMark symbol={leg.leg.symbol} size={34} />
                 <View style={styles.legIdentity}>
                   <Text style={styles.legSymbol}>
-                    {leg.leg.direction === "long" ? "Long" : "Short"} {leg.leg.symbol} · {leg.leverage}x · {(leg.leg.weightBps / 100).toFixed(1)}%
+                    {leg.leg.direction === "long" ? "Long" : "Short"} {displaySymbol(leg.leg.symbol)} · {leg.leverage}x · {(leg.leg.weightBps / 100).toFixed(1)}%
                   </Text>
                   <Text style={styles.legStat}>
                     ${leg.margin.toFixed(2)} margin · ${leg.notional.toFixed(2)} notional
@@ -210,7 +191,7 @@ export function BinDetail({ bin, data, balance, trader, onBack }: BinDetailProps
         ) : null}
 
         <Text style={styles.footnote}>
-          All legs open together or none do. Orders fill on the Perpl order book on Monad testnet.
+          Legs fill one at a time on Hyperliquid testnet. If one fails, the legs that filled are closed.
         </Text>
       </ScrollView>
 
@@ -273,12 +254,6 @@ const styles = StyleSheet.create({
   back: { fontFamily: family.medium, fontSize: 22, color: "#14181a" },
   content: { padding: space.lg, gap: space.lg },
   modes: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
-  pulseBox: { gap: space.xs, padding: space.md, borderRadius: 18, backgroundColor: dark.surface },
-  pulseLabel: { fontFamily: family.medium, fontSize: 14, color: dark.ink },
-  pulseRow: { flexDirection: "row", alignItems: "center", gap: space.md },
-  pulseSymbol: { width: 52, fontFamily: family.semibold, fontSize: 13, color: dark.ink },
-  pulseStance: { width: 72, fontFamily: family.medium, fontSize: 13 },
-  pulseFlow: { fontFamily: family.regular, fontSize: 13, color: dark.muted },
   modeHint: { fontFamily: family.regular, fontSize: 12, color: dark.muted },
   identityRow: { flexDirection: "row", alignItems: "center", gap: space.md },
   thesis: {

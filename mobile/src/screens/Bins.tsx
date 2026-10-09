@@ -6,7 +6,7 @@ import { AssetMark } from "../components/AssetMark";
 import { Ranks } from "../components/Ranks";
 import { TabBar, tabBarHeight, type TabKey } from "../components/TabBar";
 import { ArrowBadge, ScreenTitle, SelectPill, Tag, tone } from "../components/ui";
-import { loadMarkets, type MarketData } from "../lib/perpl";
+import { displaySymbol, loadMarkets, type MarketData } from "../lib/market";
 import { dark, family, space, touch } from "../theme";
 
 const fills = [tone.butter, tone.coral, tone.violet, tone.lime, tone.sky, tone.peach];
@@ -56,7 +56,7 @@ export function Bins({ onOpen, onComplete, onSelectTab, onOpenAsset }: BinsProps
           <Ranks onOpenAsset={onOpenAsset} />
         ) : (
           <>
-            <Text style={styles.intro}>Each bin is a theme traded as a basket of Perpl perps. Tap ↗ to open a bin, or tap any asset to trade it alone.</Text>
+            <Text style={styles.intro}>Each bin is a theme traded as a basket of Hyperliquid perps. Tap ↗ to open a bin, or tap any asset to trade it alone.</Text>
             {error !== null ? (
               <Text style={styles.error}>{error}</Text>
             ) : data === null ? (
@@ -68,7 +68,7 @@ export function Bins({ onOpen, onComplete, onSelectTab, onOpenAsset }: BinsProps
               bins.map((bin, index) => {
                 const active = selected.includes(bin.id);
                 const lead = bin.legs[0];
-                const price = data.markets.get(lead.symbol)?.mark;
+                const price = data.markets.get(lead.symbol)?.markPx;
                 return (
                   <View key={bin.id} style={styles.card}>
                     <View style={[styles.accent, { backgroundColor: fills[index % fills.length] }]} />
@@ -84,19 +84,19 @@ export function Bins({ onOpen, onComplete, onSelectTab, onOpenAsset }: BinsProps
                           key={`${leg.symbol}-${leg.direction}`}
                           onPress={() => onOpenAsset(leg.symbol)}
                           accessibilityRole="button"
-                          accessibilityLabel={`Trade ${leg.symbol}`}
+                          accessibilityLabel={`Trade ${displaySymbol(leg.symbol)}`}
                           style={({ pressed }) => [styles.leg, pressed && styles.pressed]}
                         >
                           <AssetMark symbol={leg.symbol} size={22} />
                           <Text style={styles.legText}>
-                            {leg.direction === "long" ? "Long" : "Short"} {leg.symbol} {(leg.weightBps / 100).toFixed(0)}%
+                            {leg.direction === "long" ? "Long" : "Short"} {displaySymbol(leg.symbol)} {(leg.weightBps / 100).toFixed(0)}%
                           </Text>
                         </Pressable>
                       ))}
                     </View>
                     <View style={styles.cardFoot}>
                       <Text style={styles.price}>
-                        {lead.symbol} {price === undefined ? "—" : `$${price.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
+                        {displaySymbol(lead.symbol)} {price === undefined ? "—" : `$${price.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
                       </Text>
                       <Pressable
                         onPress={() => toggle(bin)}

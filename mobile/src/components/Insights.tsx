@@ -67,7 +67,7 @@ export function Insights({ onOpenAsset }: { onOpenAsset: (symbol: string) => voi
 
       {data?.protocol && (
         <ToneCard>
-          <CardTitle>Perpl today</CardTitle>
+          <CardTitle>Hyperliquid today</CardTitle>
           <View style={styles.tiles}>
             {[
               ["24h volume", compact(data.protocol.headline.volume24h)],

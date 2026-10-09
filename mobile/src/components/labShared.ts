@@ -1,4 +1,4 @@
-import type { templates } from "shared";
+import type * as templates from "shared";
 
 export const tints = { purple: "#8f7cf5", lime: "#b4f58c", blue: "#6fb7f2", peach: "#f2b98b" } as const;
 

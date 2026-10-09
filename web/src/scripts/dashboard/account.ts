@@ -1,5 +1,6 @@
 import { avatars, query } from "./dom";
 import { disconnect } from "./tabs";
+import { initIdentity } from "./identity";
 import { requireTrader } from "./state";
 
 type Profile = { name: string; email: string; variant?: number };
@@ -44,6 +45,7 @@ export function initAccount() {
     }
   }
   void paint();
+  void initIdentity();
 
   const home = query("[data-acct-home]");
   const panes = Array.from(document.querySelectorAll<HTMLElement>("[data-acct-pane]"));

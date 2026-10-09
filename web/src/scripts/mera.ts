@@ -7,7 +7,7 @@ import {
   type TradingAccount,
 } from "shared";
 
-const storageKey = "monad.passkey.credential";
+const storageKey = "opencash.passkey.credential";
 
 const browserStore: CredentialStore = {
   async read() {

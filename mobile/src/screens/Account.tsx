@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { isDevAuth, perpl, type TradingAccount } from "shared";
+import { isDevAuth, type TradingAccount } from "shared";
 import { PassCard } from "../components/PassCard";
 import { AuthShell, type AuthMode } from "../components/AuthShell";
 import { SettingIcon, type SettingIconKind } from "../components/SettingIcon";
@@ -336,7 +336,7 @@ export function Account({
           {panel === "profile" && formCard}
           {panel === "wallets" && (
             <View style={styles.card}>
-              <Text style={styles.note}>One passkey, one address. Monad Testnet</Text>
+              <Text style={styles.note}>One passkey, one address. Hyperliquid Testnet</Text>
               <Text style={styles.walletAddress}>{account.address}</Text>
               <Action label={copied ? "Copied" : "Copy address"} onPress={() => void copyAddress()} />
             </View>
@@ -371,11 +371,10 @@ export function Account({
           {panel === "network" && (
             <View style={styles.card}>
               <Text style={styles.note}>Network</Text>
-              <Text style={styles.walletAddress}>Monad Testnet · chain {perpl.perplTestnet.chainId}</Text>
-              <Text style={styles.note}>Perpl exchange</Text>
-              <Text style={styles.walletAddress}>{perpl.perplTestnet.exchange}</Text>
-              <Text style={styles.note}>Collateral (AUSD)</Text>
-              <Text style={styles.walletAddress}>{perpl.perplTestnet.collateral}</Text>
+              <Text style={styles.walletAddress}>Hyperliquid Testnet</Text>
+              <Text style={styles.note}>Margin</Text>
+              <Text style={styles.walletAddress}>USDC</Text>
+              <Text style={styles.note}>Deposits arrive from Arbitrum Sepolia through the app. Testnet funds have no value.</Text>
             </View>
           )}
           {status !== "" && <Text style={[styles.status, failed && styles.statusFailed]}>{status}</Text>}
@@ -428,7 +427,7 @@ export function Account({
             email={profile?.email}
             tier={isDevAuth ? "Dev account" : "Passkey pass"}
             variant={variant}
-            network="Monad Testnet"
+            network="Hyperliquid Testnet"
             value={portfolio}
             copied={copied}
             onCopyAddress={() => void copyAddress()}
@@ -472,7 +471,7 @@ export function Account({
 
                   <Text style={styles.sectionLabel}>Settings</Text>
                   <View style={styles.group}>
-                    <Row icon="globe" tint="blue" label="Network" value="Monad Testnet" onPress={() => openPanel("network")} />
+                    <Row icon="globe" tint="blue" label="Network" value="Hyperliquid Testnet" onPress={() => openPanel("network")} />
                     <Row icon="exit" tint="peach" label="Sign out" onPress={signOut} last />
                   </View>
                 </>

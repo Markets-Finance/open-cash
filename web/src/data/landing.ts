@@ -14,11 +14,11 @@ export const folderPages: FolderPage[] = [
     label: "THE TERMINAL",
     title: "Every market.\nOne terminal.",
     description:
-      "Trade Monad perps and assets on Perpl from your phone or the web, with one AUSD margin balance behind every position.",
+      "Trade Hyperliquid perps, stocks and commodities from your phone or the web, with one USDC margin balance behind every position.",
     facts: [
-      ["NETWORK", "Monad"],
-      ["MARKETS", "Perpl perps"],
-      ["MARGIN", "AUSD"],
+      ["NETWORK", "Hyperliquid"],
+      ["MARKETS", "Perps and HIP-3"],
+      ["MARGIN", "USDC"],
       ["DIRECTION", "Long / Short"],
     ],
     caption: "A clearer view of your next move.",
@@ -42,7 +42,7 @@ export const folderPages: FolderPage[] = [
     label: "YOUR LIMITS",
     title: "Test first.\nCap the spend.",
     description:
-      "Replay on real Perpl history, practise with fake money, then run under a hard spending cap. Your passkey signs every call.",
+      "Replay on real Hyperliquid history, practise with fake money, then run under a hard spending cap. Your passkey signs every call.",
     facts: [
       ["SPENDING", "Hard cap"],
       ["SIGNING", "Your passkey"],
@@ -69,7 +69,7 @@ export const steps = [
     insert: "REAL HISTORY",
     glyph: "↻",
     description:
-      "Replay it on real Perpl history, then let it trade fake money. See the worst dip and the exits before any real funds are at stake.",
+      "Replay it on real Hyperliquid history, then let it trade fake money. See the worst dip and the exits before any real funds are at stake.",
   },
   {
     name: "Cap",
@@ -108,13 +108,13 @@ export const features: { id: string; visual: FeatureVisual; title: string; text:
     id: "agent",
     visual: "agent",
     title: "Describe it in one line.",
-    text: "Type a trade the way you would say it: long MON, short BTC, 2x, $100, stop 8%. The agent drafts a strategy card with the legs, the stop and the risk checks. It only drafts. You approve every trade.",
+    text: "Type a trade the way you would say it: long ETH, short BTC, 2x, $100, stop 8%. The agent drafts a strategy card with the legs, the stop and the risk checks. It only drafts. You approve every trade.",
   },
   {
     id: "test",
     visual: "paper",
     title: "Test before you risk a cent.",
-    text: "Replay a strategy on real Perpl history, then let it trade fake money alongside the live market.",
+    text: "Replay a strategy on real Hyperliquid history, then let it trade fake money alongside the live market.",
   },
   {
     id: "cap",
@@ -126,13 +126,7 @@ export const features: { id: string; visual: FeatureVisual; title: string; text:
     id: "rank",
     visual: "rank",
     title: "A leaderboard you can follow.",
-    text: "Traders are ranked on real on-chain results from Perpl. Verified users can copy the strategy behind a rank.",
-  },
-  {
-    id: "signal",
-    visual: "signal",
-    title: "Let smart money confirm it.",
-    text: "Turn on the optional Nansen signal and a card only opens when smart-money flows agree with its legs. Leave it off and nothing changes.",
+    text: "Traders are ranked on real results from Hyperliquid. Verified users can copy the strategy behind a rank.",
   },
   {
     id: "keys",
@@ -143,7 +137,7 @@ export const features: { id: string; visual: FeatureVisual; title: string; text:
 ];
 
 export const agentRows = [
-  ["You", "long MON, short BTC, 2x, $100, stop 8%"],
+  ["You", "long ETH, short BTC, 2x, $100, stop 8%"],
   ["Card", "2 legs, stop 8%, $100 margin"],
   ["Checks", "Spread, slippage, liquidation distance"],
 ] as const;
@@ -157,7 +151,7 @@ export const surfaces = [
     label: "THEMATIC BINS / ONE POSITION",
     facts: [
       ["Composition", "Markets that move together"],
-      ["Pricing", "Each leg live off the Perpl order book"],
+      ["Pricing", "Each leg live off the Hyperliquid order book"],
       ["Rebalance", "When you choose, never on a schedule"],
     ],
   },
@@ -167,7 +161,7 @@ export const surfaces = [
     label: "STRATEGIES / TEST THEN RUN",
     facts: [
       ["Templates", "Breakout, regular buying, grid, trailing stop"],
-      ["Testing", "Real Perpl history, then fake money"],
+      ["Testing", "Real Hyperliquid history, then fake money"],
       ["Limits", "A hard spending cap per run"],
     ],
   },
@@ -176,7 +170,7 @@ export const surfaces = [
     audience: "FOR ANYONE WHO WANTS A HEAD START",
     label: "AGENT / DRAFT, CHECK, APPROVE",
     facts: [
-      ["Input", "One line, like “long MON short BTC 2x $100”"],
+      ["Input", "One line, like “long ETH short BTC 2x $100”"],
       ["Output", "A card with legs, a stop and risk checks"],
       ["Control", "It drafts. You approve."],
     ],
@@ -186,9 +180,9 @@ export const surfaces = [
     audience: "FOR TRADERS AND FOLLOWERS",
     label: "LEADERBOARD / COPY",
     facts: [
-      ["Ranked on", "Real on-chain results"],
+      ["Ranked on", "Real Hyperliquid results"],
       ["Copying", "For verified users"],
-      ["Venue", "Perpl order book, Monad"],
+      ["Venue", "Hyperliquid order book"],
     ],
   },
 ] as const;
@@ -197,7 +191,7 @@ export const phone = {
   markets: [
     ["B", "BTC", "Bitcoin"],
     ["E", "ETH", "Ethereum"],
-    ["M", "MON", "Monad"],
+    ["H", "HYPE", "Hyperliquid"],
   ],
 } as const;
 
@@ -209,7 +203,7 @@ export const demoSteps = [
   },
   {
     name: "Test it",
-    description: "Replay it on real Perpl history, then on fake money. Nothing real is spent.",
+    description: "Replay it on real Hyperliquid history, then on fake money. Nothing real is spent.",
     next: "Set the cap",
   },
   {

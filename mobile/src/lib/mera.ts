@@ -4,7 +4,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { reactNativeWebAuthnClient } from "@category-labs/mera/react-native-webauthn-client";
 import {
   createTradingAccount,
-  monadTestnetChain,
   relyingPartyId,
   relyingPartyName,
   revealRecoveryPhrase,
@@ -12,9 +11,8 @@ import {
   type CredentialStore,
   type TradingAccount,
 } from "shared";
-import { createPublicClient, createWalletClient, http } from "viem";
 
-const storageKey = "monad.passkey.credential";
+const storageKey = "opencash.passkey.credential";
 export const rpId = relyingPartyId;
 
 const nativeStore: CredentialStore = {
@@ -44,18 +42,4 @@ export function signIn(): Promise<TradingAccount> {
 
 export function revealPhrase(): Promise<string> {
   return revealRecoveryPhrase(passkeyContext());
-}
-
-export const publicClient = createPublicClient({
-  chain: monadTestnetChain,
-  transport: http(),
-  batch: { multicall: { wait: 20 } },
-});
-
-export function walletClientFor(tradingAccount: TradingAccount) {
-  return createWalletClient({
-    account: tradingAccount.account,
-    chain: monadTestnetChain,
-    transport: http(),
-  });
 }

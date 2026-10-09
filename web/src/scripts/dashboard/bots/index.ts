@@ -5,6 +5,7 @@ import { query } from "../dom";
 import { toolbox } from "../agent/session";
 import { requireTrader } from "../state";
 import { localBotStorage } from "./storage";
+import { publishStrategy } from "../strategies";
 import { initServerBots, runOnServer, startServerBots } from "./server";
 import { renderBot } from "./view";
 
@@ -60,6 +61,21 @@ export function initBots() {
       try {
         await runOnServer(bot.card, bot.mode);
         hint.textContent = `${bot.name} now runs on the server.`;
+      } catch (error) {
+        hint.dataset.tone = "error";
+        hint.textContent = error instanceof Error ? error.message : String(error);
+      }
+      return;
+    }
+    if ((event.target as HTMLElement).closest("[data-bot-share]")) {
+      const hint = query("[data-bot-hint]");
+      const source = JSON.parse(localStorage.getItem(`opencash.bots.${requireTrader().address.toLowerCase()}`) ?? "[]") as Bot[];
+      const shared = source.find((b) => b.id === root.dataset.bot);
+      if (!shared) return;
+      try {
+        const published = await publishStrategy(shared.card);
+        hint.dataset.tone = "";
+        hint.textContent = `Shared as strategy ${published.id}. It appears on Ranks and ranks once two followers have closed trades.`;
       } catch (error) {
         hint.dataset.tone = "error";
         hint.textContent = error instanceof Error ? error.message : String(error);

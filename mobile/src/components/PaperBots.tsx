@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, View, Pressable } from "react-native";
-import { templates } from "shared";
+import * as templates from "shared";
 import { loadSeries, removePaper, subscribePapers } from "../lib/lab";
 import { dark, family, space, touch } from "../theme";
 import { AssetMark } from "./AssetMark";

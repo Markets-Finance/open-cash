@@ -22,12 +22,7 @@ import { Send } from "./src/screens/Send";
 import { Trade } from "./src/screens/Trade";
 import type { TabKey } from "./src/components/TabBar";
 import { Home } from "./src/screens/Home";
-import {
-  loadCollateralBalance,
-  loadMarkets,
-  loadSummary,
-  type MarketData,
-} from "./src/lib/perpl";
+import { loadAccountDesk, loadSummary, type MarketData } from "./src/lib/market";
 import { dark } from "./src/theme";
 
 type Screen =
@@ -79,12 +74,11 @@ export default function App() {
     setPortfolio(null);
     if (account === null) return;
 
-    loadCollateralBalance(account.address)
-      .then((ausd) => setBalance(ausd))
+    loadAccountDesk(account.address, true)
+      .then((desk) => setBalance(Math.max(0, desk.equity - desk.positions.reduce((sum, p) => sum + p.marginUsed, 0))))
       .catch(() => setBalance(null));
 
-    loadMarkets()
-      .then((data) => loadSummary(account.address, data))
+    loadSummary(account)
       .then((summary) => setPortfolio(summary.total))
       .catch(() => setPortfolio(null));
   }
