@@ -21,7 +21,7 @@ export {
 
 export const hlNetwork = "testnet";
 
-const info = createHlInfo(hlNetwork);
+export const info = createHlInfo(hlNetwork);
 
 export type HlExchange = ReturnType<typeof createHlExchange>;
 
