@@ -56,3 +56,13 @@ export {
   marketFeeRates,
 } from "./book.js";
 export type { HlFeeRates } from "./book.js";
+export {
+  bridgeAbi,
+  bridgeConfig,
+  depositPermitTypedData,
+  encodeBatchedDeposit,
+  minDepositUsdc,
+  toUsdcUnits,
+  usdcPermitAbi,
+} from "./deposit.js";
+export type { SignedDeposit } from "./deposit.js";
