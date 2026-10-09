@@ -37,3 +37,4 @@ export {
 } from "./webauthn/publicKey.js";
 export type { P256PublicKey } from "./webauthn/publicKey.js";
 export * from "./analysis/index.js";
+export * from "./strategy/index.js";
