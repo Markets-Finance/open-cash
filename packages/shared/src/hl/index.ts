@@ -41,3 +41,17 @@ export {
   withdrawSupply,
 } from "./floor.js";
 export type { FloorOrderOptions, FloorPlan, FloorPreview, FloorRecord, FloorStatus } from "./floor.js";
+export {
+  defaultMakerFeeBps,
+  defaultTakerFeeBps,
+  estimateMarketOrder,
+  hip3FeeMultiplier,
+  loadBook,
+  loadDeepBook,
+  loadFeeRates,
+  loadFunding,
+  loadMarketSnapshot,
+  loadOhlc,
+  marketFeeRates,
+} from "./book.js";
+export type { HlFeeRates } from "./book.js";

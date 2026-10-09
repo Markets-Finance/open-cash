@@ -36,3 +36,4 @@ export {
   relyingPartyIdHash,
 } from "./webauthn/publicKey.js";
 export type { P256PublicKey } from "./webauthn/publicKey.js";
+export * from "./analysis/index.js";
