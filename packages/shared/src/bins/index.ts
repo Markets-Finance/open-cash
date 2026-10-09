@@ -1,13 +1,14 @@
 export { binById, bins } from "./catalog.js";
 export { sizeBin, totalWeightBps, validateBin } from "./sizing.js";
-export { binEntrySwaps } from "./execute.js";
-export type { BinSwapOptions } from "./execute.js";
+export { binEntryOrders, binExitOrders, closeBin, openBin } from "./execute.js";
+export type { BinLegResult, BinOrderOptions } from "./execute.js";
 export { fetchBinPosition } from "./position.js";
-export type { BinLegPosition, BinPosition } from "./position.js";
-export type {
-  Bin,
-  BinLeg,
-  BinSizingIssue,
-  SizedBin,
-  SizedLeg,
-} from "./types.js";
+export type { BinPosition } from "./position.js";
+export type { Bin, BinDirection, BinLeg, BinSizingIssue, SizedBin, SizedLeg } from "./types.js";
+export { allocate, weightModes } from "./weights.js";
+export type { LegInputs, WeightMode } from "./weights.js";
+export { hlBinInputSource, loadBinInputs } from "./inputs.js";
+export type { BinInputSource } from "./inputs.js";
+export { customBin } from "./custom.js";
+export { planBin, withoutLegs } from "./plan.js";
+export type { BinPlan } from "./plan.js";

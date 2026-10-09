@@ -13,6 +13,7 @@ export {
   minNotionalUsd,
   modifyOrder,
   placeLimitOrder,
+  placeLimitOrders,
   setLeverage,
 } from "./orders.js";
 export type { HlBuilder, HlMarketKind, HlTif, LimitOrderInput } from "./orders.js";

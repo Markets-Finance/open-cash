@@ -67,6 +67,18 @@ export async function placeLimitOrder(exchange: ExchangeClient, input: LimitOrde
   });
 }
 
+export async function placeLimitOrders(
+  exchange: ExchangeClient,
+  inputs: LimitOrderInput[],
+  builder?: HlBuilder,
+) {
+  return exchange.order({
+    orders: inputs.map(checkedOrder),
+    grouping: "na",
+    ...(builder ? { builder: { b: builder.address, f: builder.feeTenthsBps } } : {}),
+  });
+}
+
 export function modifyOrder(exchange: ExchangeClient, orderId: number, input: LimitOrderInput) {
   return exchange.modify({ oid: orderId, order: checkedOrder(input) });
 }
