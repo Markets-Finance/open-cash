@@ -1,6 +1,7 @@
 import cors from "@fastify/cors";
 import Fastify from "fastify";
 import { hoodMainnet } from "shared";
+import { registerAnalyticsRoute } from "./analytics/route.js";
 import { registerBoardsRoute } from "./boards/route.js";
 import { registerDepositRoute } from "./deposit/route.js";
 import { registerBotRoute } from "./runner/route.js";
@@ -21,6 +22,7 @@ app.get("/health", async () => ({
   chainId: hoodMainnet.chainId,
 }));
 
+registerAnalyticsRoute(app);
 registerBoardsRoute(app);
 registerDepositRoute(app);
 registerBotRoute(app);
