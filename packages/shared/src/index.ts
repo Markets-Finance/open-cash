@@ -41,3 +41,5 @@ export * from "./strategy/index.js";
 export * from "./agent/index.js";
 export * from "./templates/index.js";
 export * from "./bots/index.js";
+export * from "./copy/index.js";
+export * from "./identity/index.js";
