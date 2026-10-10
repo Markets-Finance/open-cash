@@ -1,0 +1,21 @@
+import assert from "node:assert/strict";
+import { defaultTranslateTemplate as t, parseTranslation } from "./translate.js";
+
+const known = ["BTC", "ETH", "xyz:CL", "xyz:BRENTOIL", "xyz:GOLD", "xyz:NVDA", "xyz:SP500"];
+const fenced = "Thinking done.\n```json\n" + JSON.stringify({ name: "Oil shock", thesis: "Supply cut lifts crude.", legs: [{ symbol: "CL", direction: "long", weightBps: 6000 }, { symbol: "xyz:GOLD", direction: "long", weightBps: 3000 }, { symbol: "FAKEOIL", direction: "long", weightBps: 1000 }], rationale: "OPEC cut", caveats: ["Headline risk"] }) + "\n```";
+const a = parseTranslation(fenced, known, t);
+assert.deepEqual(a.card.legs.map((l) => l.symbol), ["xyz:CL", "xyz:GOLD"], "bare names resolve, unknown dropped");
+assert.deepEqual(a.dropped, ["FAKEOIL"]);
+assert.equal(a.card.legs.reduce((s, l) => s + l.weightBps, 0), 10000, "weights renormalised");
+assert.ok(a.card.legs.every((l) => l.leverage === t.leverage), "leverage from template only");
+assert.equal(a.card.stopLossPct, t.stopLossPct);
+assert.equal(a.card.marginUsd, t.marginUsd);
+assert.equal(a.card.kind, "basket");
+const lev = parseTranslation(JSON.stringify({ name: "x", legs: [{ symbol: "BTC", direction: "short", weightBps: 1, leverage: 50 }] }), known, t);
+assert.equal(lev.card.legs[0].leverage, t.leverage, "model cannot set leverage");
+assert.equal(lev.card.legs[0].weightBps, 10000);
+const many = parseTranslation(JSON.stringify({ legs: ["BTC", "ETH", "xyz:CL", "xyz:GOLD", "xyz:NVDA", "xyz:SP500"].map((s) => ({ symbol: s, direction: "long", weightBps: 100 })) }), known, t);
+assert.equal(many.card.legs.length, t.maxLegs, "leg cap");
+assert.throws(() => parseTranslation(JSON.stringify({ legs: [], rationale: "No clear trade from this headline" }), known, t), /No clear trade/);
+assert.throws(() => parseTranslation("I cannot help", known, t), /did not return JSON/);
+console.log("translate checks passed");

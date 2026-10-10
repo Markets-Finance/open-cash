@@ -1,5 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify from "fastify";
+import { registerAgentRoute } from "./agent/route.js";
 import { registerAnalyticsRoute } from "./analytics/route.js";
 import { registerBoardsRoute } from "./boards/route.js";
 import { registerDepositRoute } from "./deposit/route.js";
@@ -19,6 +20,7 @@ await app.register(cors, { origin: true });
 
 app.get("/health", async () => ({ ok: true }));
 
+registerAgentRoute(app);
 registerAnalyticsRoute(app);
 registerBoardsRoute(app);
 registerDepositRoute(app);
