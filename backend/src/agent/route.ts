@@ -11,12 +11,16 @@ import {
   parseTranslation,
   previewStrategy,
   translatePrompt,
+  type HlNetwork,
   type MarketContext,
   type TranslateTemplate,
 } from "shared";
 
 const marketCount = 60;
-const toolbox = createToolbox(createHlInfo("mainnet"), defaultLimits);
+const toolboxes = {
+  mainnet: createToolbox(createHlInfo("mainnet"), defaultLimits),
+  testnet: createToolbox(createHlInfo("testnet"), defaultLimits),
+};
 
 type Provider = { client: OpenAI; model: string; extra: { temperature?: number } };
 
@@ -39,8 +43,10 @@ function provider(): Provider | null {
 }
 
 export function registerAgentRoute(app: FastifyInstance): void {
-  app.post<{ Body: { headline?: string; marginUsd?: number } }>("/agent/translate", async (request, reply) => {
+  app.post<{ Body: { headline?: string; marginUsd?: number; network?: string } }>("/agent/translate", async (request, reply) => {
     const headline = (request.body?.headline ?? "").trim();
+    const network: HlNetwork = request.body?.network === "mainnet" ? "mainnet" : "testnet";
+    const toolbox = toolboxes[network];
     if (headline.length < 8 || headline.length > 500) return reply.status(400).send({ error: "Headline must be 8 to 500 characters" });
     const llm = provider();
     if (!llm) return reply.status(503).send({ error: "Headline translation is not configured: set OPENAI_API_KEY or NVIDIA_API_KEY on the server" });
@@ -48,7 +54,9 @@ export function registerAgentRoute(app: FastifyInstance): void {
     if (!(marginUsd > 0) || marginUsd > defaultLimits.maxMarginUsd) return reply.status(400).send({ error: `marginUsd must be above 0 and at most ${defaultLimits.maxMarginUsd}` });
     const template: TranslateTemplate = { ...defaultTranslateTemplate, marginUsd, leverage: Math.min(defaultTranslateTemplate.leverage, defaultLimits.maxLeverage) };
 
-    const markets = (await toolbox.getMarkets())
+    const available = new Set((await toolbox.getMarkets()).filter((m) => m.markPx > 0).map((m) => m.name));
+    const markets = (await toolboxes.mainnet.getMarkets())
+      .filter((m) => available.has(m.name))
       .sort((a, b) => b.dayNtlVlm - a.dayNtlVlm)
       .slice(0, marketCount)
       .map((m) => ({ symbol: m.name, kind: marketKind(m.name), volume24hUsd: m.dayNtlVlm }));
@@ -93,6 +101,7 @@ export function registerAgentRoute(app: FastifyInstance): void {
       caveats: translation.caveats,
       dropped: translation.dropped,
       model: llm.model,
+      network,
       note: "AI-drafted from a headline. Nothing is traded until you approve it.",
     };
   });

@@ -84,6 +84,9 @@ export function parseTranslation(text: string, knownSymbols: string[], template:
   }
   const rationale = typeof raw.rationale === "string" ? raw.rationale : "";
   const caveats = Array.isArray(raw.caveats) ? raw.caveats.filter((c): c is string => typeof c === "string").slice(0, 5) : [];
+  if (legs.length === 0 && dropped.length > 0) {
+    throw new Error(`None of the suggested markets are available here: ${dropped.join(", ")}`);
+  }
   if (legs.length === 0) throw new Error(rationale || "The headline did not map to a tradable market");
   const directions = new Set(legs.map((l) => l.direction));
   const card: StrategyCard = {
