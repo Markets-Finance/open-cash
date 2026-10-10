@@ -15,7 +15,10 @@ export type Bin = {
   thesis: string;
   legs: BinLeg[];
   mode?: WeightMode;
+  tags?: BinTag[];
 };
+
+export type BinTag = "weekend";
 
 export type SizedLeg = {
   leg: BinLeg;

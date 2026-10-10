@@ -67,3 +67,5 @@ export {
 } from "./deposit.js";
 export type { SignedDeposit } from "./deposit.js";
 export { stockLogoUrl } from "./logos.js";
+export { marketKind, marketSession, weekendGapStats } from "./session.js";
+export type { MarketKind, MarketSession, WeekendGap, WeekendGapStats, WeekendSignal } from "./session.js";

@@ -3,6 +3,7 @@ import type { Bin } from "./types.js";
 export const bins: Bin[] = [
   {
     id: "us-large-cap",
+    tags: ["weekend"],
     name: "US large cap",
     thesis: "The S&P 500 and the Nasdaq 100 in one position, open on weekends too.",
     legs: [
@@ -34,6 +35,7 @@ export const bins: Bin[] = [
   },
   {
     id: "metals",
+    tags: ["weekend"],
     name: "Gold and silver",
     thesis: "The two metals people buy when they stop trusting paper.",
     legs: [
@@ -43,11 +45,23 @@ export const bins: Bin[] = [
   },
   {
     id: "oil-shock",
+    tags: ["weekend"],
     name: "Oil shock",
     thesis: "Crude up, with gold alongside for when the shock spreads.",
     legs: [
       { symbol: "xyz:CL", direction: "long", weightBps: 6000, leverage: 3 },
       { symbol: "xyz:GOLD", direction: "long", weightBps: 4000, leverage: 3 },
+    ],
+  },
+  {
+    id: "global-indices",
+    tags: ["weekend"],
+    name: "Global indices",
+    thesis: "US and Japanese stock indices, priced through the weekend while their futures are shut.",
+    legs: [
+      { symbol: "xyz:SP500", direction: "long", weightBps: 4500, leverage: 3 },
+      { symbol: "xyz:XYZ100", direction: "long", weightBps: 3500, leverage: 3 },
+      { symbol: "xyz:JP225", direction: "long", weightBps: 2000, leverage: 3 },
     ],
   },
   {
@@ -64,4 +78,8 @@ export const bins: Bin[] = [
 
 export function binById(id: string): Bin | undefined {
   return bins.find((bin) => bin.id === id);
+}
+
+export function weekendBins(): Bin[] {
+  return bins.filter((bin) => bin.tags?.includes("weekend"));
 }
