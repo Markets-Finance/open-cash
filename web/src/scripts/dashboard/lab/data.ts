@@ -1,9 +1,9 @@
 import * as templates from "shared";
-import { info } from "../../hl";
+import { createHlInfo } from "shared";
 
 export type Series = templates.Series;
 
-export const loadSeries = templates.createSeriesLoader(info);
+export const loadSeries = templates.createSeriesLoader(createHlInfo("mainnet"));
 
 export const runTemplate = templates.runTemplate;
 export const simOptions = templates.simOptions;

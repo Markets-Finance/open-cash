@@ -1,11 +1,14 @@
-import { closeBin, estimateMarketOrder, maxOrderNotionalUsd, openBin, sizeBin, slippageWarnBps, type Bin, type ChartRangeKey, type ExecutionEstimate, type HlPosition } from "shared";
+import { closeBin, estimateMarketOrder, marketKind, marketSession, weekendGapStats, type WeekendGapStats, maxOrderNotionalUsd, openBin, sizeBin, slippageWarnBps, type Bin, type ChartRangeKey, type ExecutionEstimate, type HlPosition } from "shared";
 import { agentExchange } from "../hlSession";
 import { drawCandles } from "./charts";
 import { changeClass, errorText, markForSymbol, px, query, say, usd } from "./dom";
 import { getCandles } from "./candles";
 import { getDesk } from "./desk";
 import { displaySymbol, getMarketData, getMarketView } from "./market";
+import { guardOrThrow } from "./guardrails";
+import { info } from "../hl";
 import { initBoard } from "./board";
+import { initFloorCard, initFloorList } from "./floor";
 import { requireTrader } from "./state";
 import { activateTab } from "./tabs";
 
@@ -22,6 +25,7 @@ let pendingAsset = false;
 let accepted = false;
 let availableUsd = 0;
 let costRun = 0;
+const gapCache = new Map<string, WeekendGapStats>();
 
 export function openAsset(next: string) {
   symbol = next;
@@ -44,6 +48,10 @@ function elements() {
     label: query("[data-trade-market-label]"),
     price: query("[data-trade-market-price]"),
     meta: query("[data-trade-market-meta]"),
+    session: query("[data-trade-session]"),
+    gapCard: query("[data-gap-card]"),
+    gapStats: query("[data-gap-stats]"),
+    gapNote: query("[data-gap-note]"),
     chart: query("[data-trade-chart]"),
     desk: query("[data-trade-desk]"),
     deskStatus: query("[data-trade-desk-status]"),
@@ -103,6 +111,47 @@ export async function initTrade() {
     ui.meta.textContent = market ? `max ${market.maxLeverage}x · open interest ${compact(market.openInterest * market.markPx)}` : "";
     ui.title.textContent = `${side === "long" ? "Long" : "Short"} ${displaySymbol(symbol)}`;
     syncLeverageRange();
+    renderSession();
+    void renderGaps();
+  }
+
+  function renderSession() {
+    const session = marketSession(symbol);
+    ui.session.textContent = session.label;
+    ui.session.dataset.open = String(session.tradfiOpen);
+  }
+
+  async function renderGaps() {
+    const shown = symbol;
+    if (marketKind(shown) === "crypto") {
+      ui.gapCard.hidden = true;
+      return;
+    }
+    ui.gapCard.hidden = false;
+    ui.gapStats.innerHTML = `<p class="empty">Loading…</p>`;
+    ui.gapNote.textContent = "";
+    try {
+      let stats = gapCache.get(shown);
+      if (!stats) {
+        stats = await weekendGapStats(info, shown);
+        gapCache.set(shown, stats);
+      }
+      if (shown !== symbol) return;
+      if (stats.gaps.length === 0) {
+        ui.gapCard.hidden = true;
+        return;
+      }
+      const cells: [string, string][] = [
+        ["Weeks measured", String(stats.weeks)],
+        ["Typical weekend gap", stats.medianAbsGapPct === null ? "—" : `${stats.medianAbsGapPct.toFixed(2)}%`],
+        ["Weekend moved the right way", stats.directionHitRate === null ? "—" : `${Math.round(stats.directionHitRate * 100)}%`],
+        ["Gap already priced in", stats.medianCapturedShare === null ? "—" : `${Math.round(stats.medianCapturedShare * 100)}%`],
+      ];
+      ui.gapStats.innerHTML = cells.map(([label, value]) => `<div class="stat"><small>${label}</small><b>${value}</b></div>`).join("");
+      ui.gapNote.textContent = [...new Set([stats.method, stats.caveat, marketSession(shown).caveat].filter(Boolean))].join(" ");
+    } catch (error) {
+      if (shown === symbol) ui.gapStats.innerHTML = `<p class="empty">${errorText(error)}</p>`;
+    }
   }
 
   function syncLeverageRange() {
@@ -367,6 +416,7 @@ export async function initTrade() {
     ui.submit.disabled = true;
     say(ui.status, "Waiting for your passkey…");
     try {
+      await guardOrThrow(Number(ui.margin.value));
       const exchange = await agentExchange(trader);
       say(ui.status, "Opening position…");
       const [result] = await openBin(exchange, sizing.sized, data.markets, { maxNotionalUsd: maxOrderNotionalUsd });
@@ -382,6 +432,8 @@ export async function initTrade() {
     }
   });
 
+  initFloorList();
+  initFloorCard(() => ({ symbol, isLong: side === "long" }));
   renderAll();
   renderMarkets();
   if (pendingAsset) {

@@ -1,10 +1,11 @@
-import { binFromCard, closeBin, maxOrderNotionalUsd, openBin, sizeBin, type StrategyCard, type StrategyLeg, type StrategyPreview } from "shared";
+import { binFromCard, cardMaxLossUsd, closeBin, maxOrderNotionalUsd, openBin, sizeBin, type StrategyCard, type StrategyLeg, type StrategyPreview } from "shared";
 import type { BotMode } from "shared";
 import { agentExchange } from "../../hlSession";
 import { errorText, esc, markForSymbol, px, query, say, usd } from "../dom";
 import { addBotFromCard } from "../bots";
 import { initHome } from "../home";
 import { getDesk } from "../desk";
+import { guardOrThrow } from "../guardrails";
 import { getMarketData, getPositions } from "../market";
 import { requireTrader } from "../state";
 import { run } from "./session";
@@ -153,6 +154,7 @@ async function approve() {
       return;
     }
     say(ui.status, "Waiting for your passkey…");
+    await guardOrThrow(cardMaxLossUsd(card));
     const exchange = await agentExchange(requireTrader());
     say(ui.status, "Opening every leg…");
     const results = await openBin(exchange, sized, data.markets, { maxNotionalUsd: maxOrderNotionalUsd });

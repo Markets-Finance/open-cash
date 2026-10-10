@@ -83,7 +83,7 @@ export function paintResult() {
   const win = m.winRatePct === null ? "—" : `${m.winRatePct.toFixed(0)}%`;
   query("[data-lab-result]").innerHTML = `
     <div class="result__top">
-      <span class="lab__kicker">${esc(series.market.name)} · ${days} days · testnet history</span>
+      <span class="lab__kicker">${esc(series.market.name)} · ${days} days · real Hyperliquid prices</span>
       <span class="result__vs">Just holding: ${pct(m.holdReturnPct)}</span>
     </div>
     <div class="result__big result__big--${tone(m.returnPct)}">${pct(m.returnPct)}</div>

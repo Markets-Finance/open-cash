@@ -7,6 +7,7 @@ export const labState = {
   symbols: [] as string[],
   symbol: "",
   resolution: 3600,
+  days: 30,
   selected: null as templates.TemplateId | null,
   series: null as Series | null,
   stage: "simulate" as Stage,

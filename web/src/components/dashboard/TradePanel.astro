@@ -33,6 +33,11 @@
       <div data-trade-desk class="table-wrap table-wrap--loading">Loading…</div>
       <p class="status-line" data-trade-desk-status></p>
     </div>
+    <div class="card">
+      <span class="panel__label">Floors</span>
+      <div data-floor-list class="table-wrap table-wrap--loading">Loading…</div>
+      <p class="status-line" data-floor-list-status></p>
+    </div>
   </div>
 
   <div data-trade-asset hidden>
@@ -45,6 +50,7 @@
               <span class="card__label" data-trade-market-label>—</span>
               <span class="chart-head__price trade-mono" data-trade-market-price>—</span>
               <small class="chart-head__meta" data-trade-market-meta></small>
+              <small class="chart-head__meta" data-trade-session></small>
             </div>
             <div class="chip-row" data-trade-range>
               <button type="button" class="chip" data-range="1h">1H</button>
@@ -55,6 +61,11 @@
             </div>
           </div>
           <div class="chart-area chart-area--tall" data-trade-chart></div>
+        </div>
+        <div class="card" data-gap-card hidden>
+          <span class="panel__label">Weekend gaps</span>
+          <div class="stat-grid stat-grid--four" data-gap-stats></div>
+          <p class="panel__lede" data-gap-note></p>
         </div>
         <div class="card">
           <span class="panel__label">Market details</span>
@@ -96,6 +107,26 @@
           <div class="cost" data-ticket-cost hidden></div>
           <button type="button" class="btn btn--primary" data-ticket-submit>Place order</button>
           <p class="status-line" data-ticket-status></p>
+        </div>
+        <div class="card trade-ticket">
+          <span class="card__label">Keep a floor</span>
+          <p class="quote-line">Lend most of the money and trade with the rest. The most you can lose is the traded part. The sleeve must be $10 or more once leveraged, and $10.50 or less on testnet.</p>
+          <div class="amount-box">
+            <div class="amount-box__head"><span>Total to commit</span></div>
+            <div class="amount-box__row">
+              <span class="amount-box__cur">$</span>
+              <input type="number" min="0" step="any" placeholder="0" inputmode="decimal" data-floor-amount />
+              <em>USDC</em>
+            </div>
+          </div>
+          <div class="chip-row" data-floor-pcts></div>
+          <div class="lev" data-lev-risk="low">
+            <div class="lev__head"><span>Trade leverage</span><b data-floor-lev-label>3x</b></div>
+            <input type="range" class="lev__range" min="1" max="5" step="1" value="3" data-floor-lev aria-label="Floor trade leverage" />
+          </div>
+          <div class="cost" data-floor-preview></div>
+          <button type="button" class="btn btn--primary" data-floor-open disabled>Open with a floor</button>
+          <p class="status-line" data-floor-status></p>
         </div>
       </aside>
     </div>

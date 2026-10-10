@@ -108,21 +108,6 @@ function renderResult(tool: string, r: Any): string {
         ["Buy slippage", bps(r.buySlippageBps)],
         ["Sell slippage", bps(r.sellSlippageBps)],
       ])}<div class="depth-row"><span></span><span>Bids</span><span>Asks</span></div>${depthRows(r.depth)}<p class="agent__note">Counts the top 100 price levels on each side.</p>`;
-    case "smart_money": {
-      const rows = (r as { symbol: string; flow24hUsd: number; flow7dUsd: number; flow30dUsd: number; traders: number; stance: string; tokens: string[] }[])
-        .map(
-          (p) => `<tr>
-            <td><div class="cell-identity">${markForSymbol(p.symbol)}<b>${esc(p.symbol)}</b></div></td>
-            <td><span class="pulse-chip pulse-chip--${esc(p.stance)}">${esc(p.stance)}</span></td>
-            <td class="cell-value ${changeClass(p.flow24hUsd)}">${signed(p.flow24hUsd / 1000, 0)}K</td>
-            <td class="cell-value ${changeClass(p.flow7dUsd)}">${signed(p.flow7dUsd / 1000, 0)}K</td>
-            <td class="cell-value ${changeClass(p.flow30dUsd)}">${signed(p.flow30dUsd / 1000, 0)}K</td>
-            <td class="cell-muted">${p.tokens.length === 0 ? "no data" : `${p.traders} traders`}</td>
-          </tr>`,
-        )
-        .join("");
-      return `<div class="table-wrap"><table class="data-table"><thead><tr><th>Market</th><th>Stance</th><th>24h</th><th>7d</th><th>30d</th><th></th></tr></thead><tbody>${rows}</tbody></table></div><p class="agent__note">Nansen smart-money net flow in USD, across every chain the token trades on.</p>`;
-    }
     case "compare_pair":
       return `${stats([
         ["Correlation", r.correlation.toFixed(2)],

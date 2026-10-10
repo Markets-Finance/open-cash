@@ -1,4 +1,4 @@
-import { bins, closeBin, customBin, hlBinInputSource, maxOrderNotionalUsd, openBin, planBin, weightModes, type Bin, type WeightMode } from "shared";
+import { bins, closeBin, marketSession, customBin, hlBinInputSource, maxOrderNotionalUsd, openBin, planBin, weightModes, type Bin, type WeightMode } from "shared";
 import { cardFromBin } from "shared";
 import { agentExchange } from "../hlSession";
 import { info } from "../hl";
@@ -6,6 +6,7 @@ import { setCard } from "./agent/card";
 import { addBotFromCard } from "./bots";
 import { errorText, legStackHtml, query, usd } from "./dom";
 import { getDesk } from "./desk";
+import { guardOrThrow } from "./guardrails";
 import { initHome } from "./home";
 import { displaySymbol, getMarketData, getPositions } from "./market";
 import { closeModal, openModal } from "./modal";
@@ -25,10 +26,10 @@ export function initBins() {
     card.dataset.binId = bin.id;
     card.innerHTML = `
       ${legStackHtml(bin.legs.map((leg) => leg.symbol))}
-      <span class="tile-card__name">${bin.name}</span>
+      <span class="tile-card__name">${bin.name}${bin.tags?.includes("weekend") ? ` <small class="tag-pill" title="Trades while stock and futures markets are shut">Weekend</small>` : ""}</span>
       <span class="tile-card__thesis">${bin.thesis}</span>
       <div class="tile-card__legs">
-        ${bin.legs.map((leg) => `<div class="tile-leg asset-row--link" data-open-asset="${leg.symbol}" title="Trade ${leg.symbol}"><span>${leg.direction === "long" ? "Long" : "Short"} ${leg.symbol}</span><span>${(leg.weightBps / 100).toFixed(0)}%</span></div>`).join("")}
+        ${bin.legs.map((leg) => `<div class="tile-leg asset-row--link" data-open-asset="${leg.symbol}" title="Trade ${leg.symbol}"><span>${leg.direction === "long" ? "Long" : "Short"} ${displaySymbol(leg.symbol)}</span><span>${(leg.weightBps / 100).toFixed(0)}%</span></div>`).join("")}
       </div>`;
     card.addEventListener("click", (event) => {
       if ((event.target as HTMLElement).closest("[data-open-asset]")) return;
@@ -59,6 +60,7 @@ function openBinModal(bin: Bin, custom = false) {
       <button type="button" class="modal__close" data-close>×</button>
     </div>
     <p class="quote-line">${bin.thesis}</p>
+    ${bin.tags?.includes("weekend") && bin.legs[0] ? `<p class="quote-line">${marketSession(bin.legs[0].symbol).label}.</p>` : ""}
     ${custom ? `<div class="pick-grid" data-bin-picks>Loading markets…</div>` : ""}
     <div class="chip-row" data-bin-modes>${weightModes.map((m) => `<button type="button" class="chip${m.key === mode ? " chip--active" : ""}" data-mode="${m.key}" title="${m.hint}">${m.label}</button>`).join("")}</div>
     <div class="amount-row">
@@ -178,6 +180,7 @@ function openBinModal(bin: Bin, custom = false) {
         status.dataset.tone = "";
         try {
           status.textContent = "Waiting for your passkey…";
+          await guardOrThrow(sized.margin);
           const exchange = await agentExchange(requireTrader());
           status.textContent = "Opening every leg…";
           const results = await openBin(exchange, sized, data.markets, { maxNotionalUsd: maxOrderNotionalUsd });

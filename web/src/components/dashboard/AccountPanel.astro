@@ -17,6 +17,10 @@ import AccountCard from "../AccountCard.astro";
           <span class="setting-row__icon setting-row__icon--lime"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19" stroke-width="3" fill="none"/></svg></span>
           <span class="setting-row__label">Verified X account</span><span class="setting-row__chev" aria-hidden="true">›</span>
         </button>
+        <button type="button" class="setting-row" data-acct-open="limits">
+          <span class="setting-row__icon setting-row__icon--lime"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V6z" stroke-width="2" fill="none"/></svg></span>
+          <span class="setting-row__label">Loss limits</span><span class="setting-row__chev" aria-hidden="true">›</span>
+        </button>
         <button type="button" class="setting-row" data-acct-open="wallet">
           <span class="setting-row__icon setting-row__icon--blue"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="3"/><rect x="5" y="4" width="11" height="5" rx="2" opacity=".55"/></svg></span>
           <span class="setting-row__label">Wallet address</span><span class="setting-row__chev" aria-hidden="true">›</span>
@@ -64,6 +68,18 @@ import AccountCard from "../AccountCard.astro";
             <button type="button" class="btn btn--primary" data-x-verify>Verify</button>
           </div>
         </div>
+      </div>
+
+      <div class="card acct-page" data-acct-pane="limits" hidden>
+        <div class="acct-page__head"><button type="button" class="back-btn" data-acct-back><span aria-hidden="true">←</span> Account</button><span class="acct-page__title">Loss limits</span></div>
+        <p class="agent__hint">New trades are paused once you lose your daily limit, and every new trade must have a defined maximum loss. Closing is always allowed.</p>
+        <label class="field"><span>Daily loss limit (USD)</span><input type="number" min="1" step="any" data-guard-daily /></label>
+        <label class="field"><span>Most to risk on one trade (USD)</span><input type="number" min="1" step="any" data-guard-trade /></label>
+        <label class="field"><span>Pause for (minutes) after a breach</span><input type="number" min="5" step="1" data-guard-cooloff /></label>
+        <p class="agent__hint" data-guard-bounds></p>
+        <p class="agent__hint" data-guard-note></p>
+        <button type="button" class="btn btn--primary" data-guard-save>Save with my passkey</button>
+        <p class="status-line" data-guard-status></p>
       </div>
 
       <div class="card acct-page" data-acct-pane="wallet" hidden>

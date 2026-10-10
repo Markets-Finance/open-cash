@@ -6,6 +6,7 @@ import { toolbox } from "../agent/session";
 import { requireTrader } from "../state";
 import { localBotStorage } from "./storage";
 import { publishStrategy } from "../strategies";
+import { guardForBot } from "../guardrails";
 import { initServerBots, runOnServer, startServerBots } from "./server";
 import { renderBot } from "./view";
 
@@ -21,7 +22,7 @@ async function ensureRuntime(): Promise<BotRuntime> {
   const trader = requireTrader();
   const exchange = await agentExchange(trader);
   runtime = createBotRuntime({
-    deps: createHlBotDeps({ info, exchange, user: trader.address, toolbox, maxNotionalUsd: maxOrderNotionalUsd }),
+    deps: createHlBotDeps({ info, exchange, user: trader.address, toolbox, maxNotionalUsd: maxOrderNotionalUsd, guard: guardForBot }),
     storage: localBotStorage(trader.address),
     onChange: paint,
   });

@@ -1,4 +1,4 @@
-import { liquidityGrade, slippageBps, type LiquidityGrade } from "shared";
+import { liquidityGrade, marketKind, slippageBps, type LiquidityGrade } from "shared";
 import { errorText, esc, markForSymbol, px, query } from "./dom";
 import { displaySymbol, getMarketView, type MarketData } from "./market";
 
@@ -19,12 +19,13 @@ type Row = {
 };
 
 type SortKey = "symbol" | "mark" | "changePct" | "volume" | "openInterest" | "fundingApr" | "spreadBps" | "maxLeverage" | "depth25";
-type Filter = "all" | "gainers" | "losers" | "volume" | "funding" | "tight" | "deep";
+type Filter = "tradfi" | "all" | "gainers" | "losers" | "volume" | "funding" | "tight" | "deep";
 
 const referenceUsd = 1000;
 
 const filters: { key: Filter; label: string; sort: SortKey; dir: 1 | -1 }[] = [
   { key: "all", label: "All markets", sort: "volume", dir: -1 },
+  { key: "tradfi", label: "Stocks & commodities", sort: "volume", dir: -1 },
   { key: "gainers", label: "Top gainers", sort: "changePct", dir: -1 },
   { key: "losers", label: "Top losers", sort: "changePct", dir: 1 },
   { key: "volume", label: "Most volume", sort: "volume", dir: -1 },
@@ -106,7 +107,7 @@ export function initBoard(data: MarketData, onOpen: (symbol: string, side?: "lon
   });
 
   function visible(): Row[] {
-    const list = rows.filter((row) => needle === "" || row.symbol.toLowerCase().includes(needle) || row.name.toLowerCase().includes(needle));
+    const list = rows.filter((row) => (filter !== "tradfi" || marketKind(row.symbol) !== "crypto") && (needle === "" || row.symbol.toLowerCase().includes(needle) || row.name.toLowerCase().includes(needle)));
     return list.sort((a, b) => {
       if (sort === "symbol") return a.symbol.localeCompare(b.symbol) * dir;
       const left = a[sort] ?? Number.NEGATIVE_INFINITY;

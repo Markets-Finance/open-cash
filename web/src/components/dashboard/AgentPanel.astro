@@ -10,6 +10,19 @@ import StrategyLab from "./StrategyLab.astro";
   <div data-pane="agent:agent" hidden>
   <div class="agent">
     <div class="agent__main">
+      <form class="agent__composer" data-headline-form>
+        <input
+          type="text"
+          data-headline-input
+          autocomplete="off"
+          maxlength="500"
+          placeholder="Paste a headline: Oil jumps as talks stall"
+        />
+        <button type="submit" class="btn btn--primary" data-headline-go>Turn into a trade</button>
+      </form>
+      <p class="agent__hint" data-headline-hint></p>
+      <div class="agent__result" data-headline-result></div>
+
       <form class="agent__composer" data-agent-form>
         <input
           type="text"
@@ -31,7 +44,6 @@ import StrategyLab from "./StrategyLab.astro";
           <button type="button" class="chip" data-tool="price_stats">Price stats</button>
           <button type="button" class="chip" data-tool="order_book">Order book</button>
           <button type="button" class="chip" data-tool="compare_pair">Compare pair</button>
-          <button type="button" class="chip" data-tool="smart_money">Smart money</button>
         </div>
         <div class="agent__args" data-agent-args>
           <label class="field"><span>Market</span><input data-arg="symbol" value="BTC" /></label>

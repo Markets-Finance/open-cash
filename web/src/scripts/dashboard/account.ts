@@ -1,5 +1,6 @@
 import { avatars, query } from "./dom";
 import { disconnect } from "./tabs";
+import { initGuardrailsPane } from "./guardrails";
 import { initIdentity } from "./identity";
 import { requireTrader } from "./state";
 
@@ -46,6 +47,7 @@ export function initAccount() {
   }
   void paint();
   void initIdentity();
+  initGuardrailsPane();
 
   const home = query("[data-acct-home]");
   const panes = Array.from(document.querySelectorAll<HTMLElement>("[data-acct-pane]"));

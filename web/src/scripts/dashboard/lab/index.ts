@@ -18,6 +18,12 @@ function paintMarkets() {
     .join("");
 }
 
+function paintDays() {
+  document
+    .querySelectorAll<HTMLElement>("[data-lab-days]")
+    .forEach((button) => button.setAttribute("aria-pressed", String(Number(button.dataset.labDays) === labState.days)));
+}
+
 function paintFrames() {
   document
     .querySelectorAll<HTMLElement>("[data-lab-frame]")
@@ -26,9 +32,9 @@ function paintFrames() {
 
 async function refresh() {
   const status = query("[data-lab-state]");
-  status.textContent = "Loading history.";
+  status.textContent = labState.days > 90 ? "Loading a long history. This can take a moment." : "Loading history.";
   try {
-    labState.series = await loadSeries(labState.symbol, labState.resolution);
+    labState.series = await loadSeries(labState.symbol, labState.resolution, labState.days);
     status.textContent = "";
     renderTiles();
     renderDetail();
@@ -45,6 +51,7 @@ export async function initLab() {
   labState.symbol = labState.symbols.includes("BTC") ? "BTC" : (labState.symbols[0] ?? "");
   paintMarkets();
   paintFrames();
+  paintDays();
 
   query("[data-lab-markets]").addEventListener("click", (event) => {
     const button = (event.target as HTMLElement).closest<HTMLElement>("[data-lab-market]");
@@ -58,6 +65,14 @@ export async function initLab() {
     button.addEventListener("click", () => {
       labState.resolution = Number(button.dataset.labFrame);
       paintFrames();
+      void refresh();
+    }),
+  );
+
+  document.querySelectorAll<HTMLElement>("[data-lab-days]").forEach((button) =>
+    button.addEventListener("click", () => {
+      labState.days = Number(button.dataset.labDays);
+      paintDays();
       void refresh();
     }),
   );

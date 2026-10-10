@@ -4,6 +4,7 @@ import { initAnalytics } from "./analytics";
 import { initBins } from "./bins";
 import { initBots, startBots } from "./bots";
 import { initGate } from "./gate";
+import { startGuardBar } from "./guardrails";
 import { initHome } from "./home";
 import { initRanks } from "./ranks";
 import "./modal";
@@ -31,5 +32,6 @@ document.addEventListener("click", (event) => {
 initBots();
 initGate(() => {
   void initHome();
+  startGuardBar();
   void startBots();
 });
