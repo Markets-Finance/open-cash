@@ -15,22 +15,35 @@ import {
   type TranslateTemplate,
 } from "shared";
 
-const model = process.env.NVIDIA_MODEL ?? "openai/gpt-oss-20b";
 const marketCount = 60;
 const toolbox = createToolbox(createHlInfo("mainnet"), defaultLimits);
 
-function client(): OpenAI | null {
-  const apiKey = process.env.NVIDIA_API_KEY;
-  if (!apiKey) return null;
-  return new OpenAI({ baseURL: "https://integrate.api.nvidia.com/v1", apiKey });
+type Provider = { client: OpenAI; model: string; extra: { temperature?: number } };
+
+function provider(): Provider | null {
+  if (process.env.OPENAI_API_KEY) {
+    return {
+      client: new OpenAI({ baseURL: "https://api.openai.com/v1", apiKey: process.env.OPENAI_API_KEY }),
+      model: process.env.OPENAI_MODEL ?? "gpt-5.4-mini",
+      extra: {},
+    };
+  }
+  if (process.env.NVIDIA_API_KEY) {
+    return {
+      client: new OpenAI({ baseURL: "https://integrate.api.nvidia.com/v1", apiKey: process.env.NVIDIA_API_KEY }),
+      model: process.env.NVIDIA_MODEL ?? "openai/gpt-oss-20b",
+      extra: { temperature: 0.2 },
+    };
+  }
+  return null;
 }
 
 export function registerAgentRoute(app: FastifyInstance): void {
   app.post<{ Body: { headline?: string; marginUsd?: number } }>("/agent/translate", async (request, reply) => {
     const headline = (request.body?.headline ?? "").trim();
     if (headline.length < 8 || headline.length > 500) return reply.status(400).send({ error: "Headline must be 8 to 500 characters" });
-    const llm = client();
-    if (!llm) return reply.status(503).send({ error: "Headline translation is not configured: NVIDIA_API_KEY is not set on the server" });
+    const llm = provider();
+    if (!llm) return reply.status(503).send({ error: "Headline translation is not configured: set OPENAI_API_KEY or NVIDIA_API_KEY on the server" });
     const marginUsd = Number(request.body?.marginUsd ?? defaultTranslateTemplate.marginUsd);
     if (!(marginUsd > 0) || marginUsd > defaultLimits.maxMarginUsd) return reply.status(400).send({ error: `marginUsd must be above 0 and at most ${defaultLimits.maxMarginUsd}` });
     const template: TranslateTemplate = { ...defaultTranslateTemplate, marginUsd, leverage: Math.min(defaultTranslateTemplate.leverage, defaultLimits.maxLeverage) };
@@ -43,9 +56,9 @@ export function registerAgentRoute(app: FastifyInstance): void {
 
     let text: string;
     try {
-      const completion = await llm.chat.completions.create({
-        model,
-        temperature: 0.2,
+      const completion = await llm.client.chat.completions.create({
+        model: llm.model,
+        ...llm.extra,
         messages: [
           { role: "system", content: prompt.system },
           { role: "user", content: prompt.user },
@@ -79,7 +92,7 @@ export function registerAgentRoute(app: FastifyInstance): void {
       rationale: translation.rationale,
       caveats: translation.caveats,
       dropped: translation.dropped,
-      model,
+      model: llm.model,
       note: "AI-drafted from a headline. Nothing is traded until you approve it.",
     };
   });
