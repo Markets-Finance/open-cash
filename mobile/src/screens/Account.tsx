@@ -17,13 +17,15 @@ import { AuthShell, type AuthMode } from "../components/AuthShell";
 import { SettingIcon, type SettingIconKind } from "../components/SettingIcon";
 import { TabBar, tabBarHeight, type TabKey } from "../components/TabBar";
 import { createAccount, revealPhrase, signIn } from "../lib/mera";
+import { LimitsPanel } from "../components/LimitsPanel";
+import { XVerify } from "../components/XVerify";
 import { dark, family, space, track } from "../theme";
 
 const profileKey = "opencash.profile";
 
 export type Profile = { name: string; email: string; variant?: number };
 
-type Panel = "profile" | "history" | "wallets" | "phrase" | "network" | null;
+type Panel = "profile" | "history" | "wallets" | "phrase" | "network" | "limits" | "x" | null;
 
 const failures: Record<string, string> = {
   PRF_UNAVAILABLE:
@@ -292,6 +294,8 @@ export function Account({
     history: "History",
     phrase: "Recovery phrase",
     network: "Network",
+    limits: "Loss limits",
+    x: "Verified X account",
   };
 
   function closePage() {
@@ -368,6 +372,8 @@ export function Account({
               )}
             </View>
           )}
+          {panel === "limits" && account !== null && <LimitsPanel trader={account} />}
+          {panel === "x" && account !== null && <XVerify trader={account} />}
           {panel === "network" && (
             <View style={styles.card}>
               <Text style={styles.note}>Network</Text>
@@ -466,6 +472,8 @@ export function Account({
 
                   <Text style={styles.sectionLabel}>Security</Text>
                   <View style={styles.group}>
+                    <Row icon="lock" tint="lime" label="Loss limits" onPress={() => openPanel("limits")} />
+                    <Row icon="profile" tint="purple" label="Verified X account" onPress={() => openPanel("x")} />
                     <Row icon="lock" tint="peach" label="Recovery phrase" onPress={() => openPanel("phrase")} last />
                   </View>
 

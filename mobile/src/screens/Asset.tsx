@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { chartRanges, closeBin, maxOrderNotionalUsd, type Candle, type ChartRangeKey, type DepthSummary, type HlPosition, type MarketSnapshot, type TradingAccount } from "shared";
+import { chartRanges, closeBin, marketKind, marketSession, maxOrderNotionalUsd, weekendGapStats, type WeekendGapStats, type Candle, type ChartRangeKey, type DepthSummary, type HlPosition, type MarketSnapshot, type TradingAccount } from "shared";
 import { AssetMark } from "../components/AssetMark";
 import { LineChart } from "../components/LineChart";
 import { TabBar, tabBarHeight, type TabKey } from "../components/TabBar";
+import { FloorCard } from "../components/FloorCard";
 import { OrderTicket } from "../components/OrderTicket";
 import { RoundButton, Tag, ToneCard, tone } from "../components/ui";
-import { agentExchange } from "../lib/hl";
+import { agentExchange, info } from "../lib/hl";
 import { displaySymbol, loadAccountDesk, loadCandles, loadMarkets, loadMarketView, type MarketData } from "../lib/market";
 import { dark, family, space, touch } from "../theme";
 
@@ -53,6 +54,21 @@ export function Asset({ symbol, trader, onBack, onSelectTab, onStrategies }: Ass
   const [positions, setPositions] = useState<HlPosition[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [gaps, setGaps] = useState<WeekendGapStats | null>(null);
+  const session = marketSession(symbol);
+
+  useEffect(() => {
+    let live = true;
+    setGaps(null);
+    if (marketKind(symbol) !== "crypto") {
+      weekendGapStats(info, symbol)
+        .then((stats) => live && setGaps(stats.gaps.length > 0 ? stats : null))
+        .catch(() => {});
+    }
+    return () => {
+      live = false;
+    };
+  }, [symbol]);
 
   function refreshPositions() {
     loadAccountDesk(trader.address, true)
@@ -138,6 +154,7 @@ export function Asset({ symbol, trader, onBack, onSelectTab, onStrategies }: Ass
         </View>
 
         {error !== null && <Text style={styles.error}>{error}</Text>}
+        <Text style={styles.muted}>{session.label}</Text>
 
         <ToneCard>
           <View style={styles.head}>
@@ -185,6 +202,7 @@ export function Asset({ symbol, trader, onBack, onSelectTab, onStrategies }: Ass
         </ToneCard>
 
         {data !== null && <OrderTicket trader={trader} data={data} symbol={symbol} onOpened={refreshPositions} />}
+        {market !== null && <FloorCard trader={trader} market={market} onOpened={refreshPositions} />}
 
         {positions.map((entry) => {
           const long = entry.size >= 0;
@@ -205,6 +223,26 @@ export function Asset({ symbol, trader, onBack, onSelectTab, onStrategies }: Ass
             </ToneCard>
           );
         })}
+
+        {gaps !== null && (
+          <ToneCard>
+            <Text style={styles.sectionTitle}>WEEKEND GAPS</Text>
+            <View style={styles.grid}>
+              {[
+                ["Weeks measured", String(gaps.weeks)],
+                ["Typical weekend gap", gaps.medianAbsGapPct === null ? "—" : `${gaps.medianAbsGapPct.toFixed(2)}%`],
+                ["Weekend moved the right way", gaps.directionHitRate === null ? "—" : `${Math.round(gaps.directionHitRate * 100)}%`],
+                ["Gap already priced in", gaps.medianCapturedShare === null ? "—" : `${Math.round(gaps.medianCapturedShare * 100)}%`],
+              ].map(([label, value]) => (
+                <View key={label} style={styles.stat}>
+                  <Text style={styles.statLabel}>{label}</Text>
+                  <Text style={styles.statValue}>{value}</Text>
+                </View>
+              ))}
+            </View>
+            <Text style={styles.muted}>{[...new Set([gaps.method, gaps.caveat, session.caveat].filter(Boolean))].join(" ")}</Text>
+          </ToneCard>
+        )}
 
         <ToneCard>
           <Text style={styles.sectionTitle}>MARKET DETAILS</Text>

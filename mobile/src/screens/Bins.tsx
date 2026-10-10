@@ -56,7 +56,7 @@ export function Bins({ onOpen, onComplete, onSelectTab, onOpenAsset }: BinsProps
           <Ranks onOpenAsset={onOpenAsset} />
         ) : (
           <>
-            <Text style={styles.intro}>Each bin is a theme traded as a basket of Hyperliquid perps. Tap ↗ to open a bin, or tap any asset to trade it alone.</Text>
+            <Text style={styles.intro}>Each bin is a theme traded as a basket of Hyperliquid perps. Tap ↗ to open a bin, or tap any asset to trade it alone. Bins tagged WEEKEND keep trading on Hyperliquid while stock and futures markets are shut.</Text>
             {error !== null ? (
               <Text style={styles.error}>{error}</Text>
             ) : data === null ? (
@@ -73,7 +73,7 @@ export function Bins({ onOpen, onComplete, onSelectTab, onOpenAsset }: BinsProps
                   <View key={bin.id} style={styles.card}>
                     <View style={[styles.accent, { backgroundColor: fills[index % fills.length] }]} />
                     <View style={styles.cardHead}>
-                      <Text style={styles.name}>{bin.name}</Text>
+                      <Text style={styles.name}>{bin.name}{bin.tags?.includes("weekend") ? "  · WEEKEND" : ""}</Text>
                       <ArrowBadge label={`Open ${bin.name}`} onPress={() => onOpen(bin, data)} />
                     </View>
                     <Text style={styles.thesis}>{bin.thesis}</Text>

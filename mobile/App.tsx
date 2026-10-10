@@ -18,6 +18,7 @@ import { Bots } from "./src/screens/Bots";
 import { startBots, stopBots } from "./src/lib/bots";
 import { Asset } from "./src/screens/Asset";
 import { Deposit } from "./src/screens/Deposit";
+import { onDepositRequest } from "./src/lib/nav";
 import { Send } from "./src/screens/Send";
 import { Trade } from "./src/screens/Trade";
 import type { TabKey } from "./src/components/TabBar";
@@ -60,6 +61,8 @@ export default function App() {
     const timer = setTimeout(() => setFontTimedOut(true), 4000);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => onDepositRequest(() => setScreen("deposit")), []);
 
   if (!loaded && !error && !fontTimedOut) {
     return <View style={{ flex: 1, backgroundColor: dark.paper }} />;

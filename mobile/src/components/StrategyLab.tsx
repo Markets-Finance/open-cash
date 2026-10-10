@@ -14,6 +14,7 @@ type Stage = "simulate" | "paper" | "live";
 const frames = [
   { label: "1h", value: 3600 },
   { label: "4h", value: 14400 },
+  { label: "1d", value: 86400 },
 ];
 
 const weekday = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -99,6 +100,7 @@ export function StrategyLab({ onOpenAsset, initialSymbol }: { onOpenAsset: (symb
   const [symbols, setSymbols] = useState<string[]>([]);
   const [symbol, setSymbol] = useState("");
   const [resolution, setResolution] = useState(3600);
+  const [days, setDays] = useState(30);
   const [series, setSeries] = useState<templates.Series | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<templates.TemplateId>("donchian");
@@ -122,8 +124,8 @@ export function StrategyLab({ onOpenAsset, initialSymbol }: { onOpenAsset: (symb
   useEffect(() => {
     if (!symbol) return;
     setError(null);
-    loadSeries(symbol, resolution).then(setSeries).catch((e) => setError(e instanceof Error ? e.message : String(e)));
-  }, [symbol, resolution]);
+    loadSeries(symbol, resolution, days).then(setSeries).catch((e) => setError(e instanceof Error ? e.message : String(e)));
+  }, [symbol, resolution, days]);
 
   const paramsFor = useCallback((template: templates.Template) => params[template.id] ?? template.defaults, [params]);
   const run = (template: templates.Template) => (series ? templates.runTemplate(template, paramsFor(template), series, allocation) : null);
@@ -148,6 +150,9 @@ export function StrategyLab({ onOpenAsset, initialSymbol }: { onOpenAsset: (symb
         <View style={styles.frames}>
           {frames.map((frame) => (
             <SelectPill key={frame.value} label={frame.label} active={resolution === frame.value} onPress={() => setResolution(frame.value)} />
+          ))}
+          {([30, 90, 180, 365] as const).map((value) => (
+            <SelectPill key={`d${value}`} label={value === 365 ? "1Y" : `${value}D`} active={days === value} onPress={() => setDays(value)} />
           ))}
         </View>
       </View>
@@ -198,7 +203,7 @@ export function StrategyLab({ onOpenAsset, initialSymbol }: { onOpenAsset: (symb
               );
             })}
           </View>
-          <Text style={styles.muted}>Result over the last 30 days of {series.market.name} on Hyperliquid testnet, after fees and funding. Tap one to see how it works.</Text>
+          <Text style={styles.muted}>Result over the last {days} days of {series.market.name} on Hyperliquid (real prices), after fees and funding. Tap one to see how it works.</Text>
 
           <View style={styles.detail}>
             <View style={[styles.accent, { backgroundColor: fill }]} />

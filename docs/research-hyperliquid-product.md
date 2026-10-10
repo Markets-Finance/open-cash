@@ -636,3 +636,69 @@ special problem in this sample.
 ### Limits
 Seven months, one regime; 17 overlapping windows per market; hourly lows can still miss intra-hour wicks;
 lend rate is a single reading; isolated-margin liquidation modelled as price ≤ entry × (1 − 1/lev + 0.5%).
+
+## 14. Bin Token decay simulation (2026-10-10)
+
+The vault's open question for Bin Tokens (§8): do constant-leverage theme tokens bleed too much to
+be worth launching? Simulated on real data, read-only, no orders.
+
+### Method
+- **Data:** Hyperliquid mainnet 1-hour candles and actual hourly funding for every leg of 7 bins,
+  2026-03-16 → 2026-10-10 (≈208 days; memory-chips 159 days because `xyz:DRAM` lists later,
+  global-indices 184 days because of `xyz:JP225`). Legs aligned on common hours.
+- **Token:** start each period with exposure = L × value, split by the bin's weights; rebalance back
+  to L × value daily (24 h) or weekly (168 h). Funding charged hourly on each leg's exposure.
+- **Hold:** same L × weights opened once and held (no rebalance), funding charged.
+- **Costs:** taker + 1 bp slippage on every unit traded (main 5.5 bps, xyz 10 bps), on entry, every
+  rebalance and exit. No builder fee.
+- **Decay drag** = token return − L × (1x hold return), in bps, over rolling 30-day windows stepped
+  weekly (19–26 windows per bin).
+- **Chop vs trend:** each window's efficiency ratio (net basket move ÷ sum of hourly moves); bottom
+  third = chop, top third = trend.
+- **Wipe:** token value ≤ 0 within a window (a 3x token without protection is wiped by a −33% basket
+  move inside one rebalance period).
+
+### Results (median drag per 30 days, bps; negative = token underperforms L × basket)
+
+| Bin | Rebal | 2x drag (chop / trend) | 3x drag (chop / trend) | 3x worst 30d drawdown | Full period 3x token vs 3x hold |
+|---|---|---|---|---|---|
+| us-large-cap | daily | −10 (−14 / +42) | −33 (−40 / +132) | 18% | +63.0% vs +58.3% |
+| global-indices | daily | −13 (−34 / +4) | −36 (−105 / +7) | 21% | +62.3% vs +57.9% |
+| metals | daily | −45 (−59 / +48) | −139 (−216 / +164) | 47% | −62.7% vs −70.1% |
+| oil-shock | daily | +25 (−22 / +99) | −98 (−197 / +313) | 49% | −17.6% vs −6.8% |
+| crypto-majors | daily | −32 (−100 / +250) | −111 (−327 / +709) | 69% | +4.3% vs +36.8% |
+| ai-compute | daily | −53 (−203 / +581) | −263 (−850 / +1827) | 56% | +249.6% vs +247.3% |
+| memory-chips | daily | −182 (−807 / +296) | −487 (−2416 / +1220) | 87% | −33.1% vs +85.3% |
+
+Weekly rebalancing roughly halves the median drag on index and metals bins (e.g. us-large-cap 3x
+−22 bps, metals 3x −25 bps) but makes the worst windows worse (metals 3x worst −1148 bps vs −446).
+
+**No 3x token was wiped** in any window of any bin: no basket fell 33% inside a single day or week
+in this period.
+
+### What it says
+1. **The textbook shape holds on real HL data**: constant leverage loses in chop and gains in trends,
+   and the size of both scales with the basket's volatility.
+2. **Index bins are fine.** us-large-cap and global-indices lose 0.1–0.4% a month at 3x and beat a
+   held 3x position over the full period (+63% vs +58%). Drawdowns stay near 20%.
+3. **Volatile theme bins are not.** memory-chips at 3x lost 33% while holding the same 3x basket
+   made 85%; its chop windows cost 24% a month. crypto-majors 3x made 4% vs 37% held.
+   ai-compute broke even only because it trended hard.
+4. **Wipe-out risk is not the problem; drag and drawdown are.** The 3x tokens survived, but sat 50–87%
+   below peak on the volatile bins, which retail holders experience as a loss.
+
+### Go / no-go
+- **Go, narrowly:** constant-leverage Bin Tokens on **index and large-cap bins at 2x–3x**, rebalanced
+  weekly (less fee drag), with the drag disclosed.
+- **No-go:** constant leverage on **single-sector or crypto bins** (memory-chips, ai-compute,
+  crypto-majors) and on commodities above 2x. For those, the **floor structure** (§11, §13) is the better
+  leveraged product: it caps the loss instead of bleeding in chop.
+- **Product implication:** Bin Tokens and floors are complements: tokens for calm index exposure,
+  floors for the narrative bins people actually want to bet on.
+
+### Limits
+One ~7-month regime; 19–26 overlapping windows per bin; hourly closes (intra-hour wicks ignored); held
+positions counted as wiped only at zero equity (real liquidation happens earlier, which flatters the
+hold baseline at 3x); no builder fee; weights and leverage as in the catalog; slippage flat at 1 bp
+(fine for these books at small size, optimistic at scale). Scripts and data in the session scratchpad
+(`decay/`), not the repo.

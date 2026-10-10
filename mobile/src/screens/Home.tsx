@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { bins, type HlPosition, type TradingAccount } from "shared";
 import { AddressMark } from "../components/AddressMark";
+import { GuardBar } from "../components/GuardBar";
 import { AssetMark } from "../components/AssetMark";
 import { TabBar, tabBarHeight, type TabKey } from "../components/TabBar";
 import { ArrowBadge, CardTitle, RoundButton, Tag, ToneCard, tone } from "../components/ui";
@@ -80,6 +81,8 @@ export function Home({ trader, name, onSelectTab, onOpenAsset, onDeposit, onSend
           <RoundButton glyph="+" label="New trade" fill={tone.coral} onPress={() => onSelectTab("trade")} />
         </View>
 
+        <GuardBar owner={trader.address} />
+
         <View style={styles.wallet}>
           <View style={styles.walletFace}>
             <View style={[styles.dot, styles.dotTopLeft]} />
@@ -113,7 +116,7 @@ export function Home({ trader, name, onSelectTab, onOpenAsset, onDeposit, onSend
                 <Text style={styles.walletIcon}>↑</Text>
                 <View style={styles.sendBar} />
               </View>
-              <Text style={styles.walletActionLabel}>Send</Text>
+              <Text style={styles.walletActionLabel}>Withdraw</Text>
             </Pressable>
           </View>
         </View>

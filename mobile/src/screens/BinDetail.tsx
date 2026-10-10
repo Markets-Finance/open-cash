@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { closeBin, hlBinInputSource, maxOrderNotionalUsd, openBin, planBin, weightModes, type Bin, type BinSizingIssue, type SizedBin, type TradingAccount, type WeightMode } from "shared";
+import { guardOrThrow } from "../lib/guardrails";
 import { agentExchange, info } from "../lib/hl";
 import { SelectPill } from "../components/ui";
 import { AssetMark, LegStack } from "../components/AssetMark";
@@ -61,6 +62,7 @@ export function BinDetail({ bin, data, balance, trader, onBack }: BinDetailProps
     setBusy(true);
     setFailed(false);
     try {
+      await guardOrThrow(trader.address, result.sized.margin);
       const exchange = await agentExchange(trader);
       setStatus("Opening every leg…");
       const results = await openBin(exchange, result.sized, data.markets, { maxNotionalUsd: maxOrderNotionalUsd });

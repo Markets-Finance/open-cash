@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { estimateMarketOrder, liquidationDistancePct, maxOrderNotionalUsd, openBin, sizeBin, slippageWarnBps, type Bin, type Book, type MarketSnapshot, type TradingAccount } from "shared";
+import { guardOrThrow } from "../lib/guardrails";
+import { requestDeposit } from "../lib/nav";
 import { agentExchange } from "../lib/hl";
 import { displaySymbol, loadAccountDesk, loadMarketView, type MarketData } from "../lib/market";
 import { dark, family, space, touch, track } from "../theme";
@@ -109,10 +111,18 @@ export function OrderTicket({ trader, data, symbol, initialDirection, onOpened }
     setBusy(true);
     setStatus({ text: "Sending…", failed: false });
     try {
+      await guardOrThrow(trader.address, margin);
       const exchange = await agentExchange(trader);
       setStatus({ text: "Opening position…", failed: false });
-      const [result] = await openBin(exchange, preview.sized, data.markets, { maxNotionalUsd: maxOrderNotionalUsd });
+      const cap = Math.min(0.01, Math.max(0.002, ((estimate?.slippageBps ?? 20) * 2) / 10_000));
+      const [result] = await openBin(exchange, preview.sized, data.markets, { maxNotionalUsd: maxOrderNotionalUsd, slippage: cap });
       if (!result || result.error) throw new Error(result?.error ?? "The order was not accepted.");
+      const wanted = preview.sized.legs[0]?.size ?? 0;
+      if (wanted > 0 && result.filledSize < wanted * 0.98) {
+        setStatus({ text: `Partly filled: ${result.filledSize} of ${wanted}. The rest was not taken because the price moved more than ${(cap * 100).toFixed(2)}%.`, failed: false });
+        onOpened();
+        return;
+      }
       setStatus({ text: `${direction === "long" ? "Long" : "Short"} ${displaySymbol(symbol)} is open.`, failed: false });
       setAmount("");
       onOpened();
@@ -150,7 +160,9 @@ export function OrderTicket({ trader, data, symbol, initialDirection, onOpened }
       <View style={styles.box}>
         <View style={styles.boxHead}>
           <Text style={styles.fieldLabel}>MARGIN</Text>
-          <Text style={styles.available}>{available === null ? "Available —" : `Available ${usd(available)}`}</Text>
+          <Pressable onPress={requestDeposit} hitSlop={8}>
+            <Text style={styles.available}>{available === null ? "Available —" : `Available ${usd(available)}`}  ·  <Text style={styles.addFunds}>Add funds</Text></Text>
+          </Pressable>
         </View>
         <View style={styles.amountRow}>
           <Text style={styles.currency}>$</Text>
@@ -239,6 +251,7 @@ const styles = StyleSheet.create({
   currency: { fontFamily: family.light, fontSize: 30, color: dark.muted },
   unit: { fontFamily: family.regular, fontSize: 12, color: dark.muted },
   available: { fontFamily: family.regular, fontSize: 12, color: dark.muted },
+  addFunds: { fontFamily: family.semibold, fontSize: 12, color: dark.ink },
   quick: { flexDirection: "row", gap: space.xs },
   quickChip: { flex: 1, minHeight: 34, borderRadius: 999, backgroundColor: tone.card, alignItems: "center", justifyContent: "center" },
   quickLabel: { fontFamily: family.medium, fontSize: 12, color: dark.ink },

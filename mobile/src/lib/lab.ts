@@ -1,9 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as templates from "shared";
-import { info } from "./hl";
+import { createHlInfo } from "shared";
 import { currentOwner } from "./bots";
 
-export const loadSeries = templates.createSeriesLoader(info);
+export const loadSeries = templates.createSeriesLoader(createHlInfo("mainnet"));
 
 type Listener = (bots: templates.PaperBot[]) => void;
 

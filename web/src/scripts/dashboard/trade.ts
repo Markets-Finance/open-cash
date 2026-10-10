@@ -76,6 +76,11 @@ function elements() {
   };
 }
 
+function slippageCap(estimate: ExecutionEstimate | null): number {
+  const expected = estimate?.slippageBps ?? 20;
+  return Math.min(0.01, Math.max(0.002, (expected * 2) / 10_000));
+}
+
 function singleLegBin(coin: string, direction: Side, leverage: number): Bin {
   return { id: `single:${coin}`, name: displaySymbol(coin), thesis: "", legs: [{ symbol: coin, direction, weightBps: 10000, leverage }] };
 }
@@ -208,6 +213,7 @@ export async function initTrade() {
       ["Slippage", estimate.slippageBps === null ? "Beyond the book" : `${estimate.slippageBps.toFixed(1)} bps · ${usd(estimate.slippageUsd ?? 0)}`],
       ["Spread", `${estimate.spreadBps.toFixed(1)} bps`],
       ["Taker fee", usd(estimate.feeUsd)],
+      ["Price limit", `${(slippageCap(estimate) * 100).toFixed(2)}% from the mark`],
       ["Funding a day", `${funding >= 0 ? "pay" : "earn"} ${usd(Math.abs(funding))}`],
     ];
     ui.cost.innerHTML =
@@ -416,12 +422,20 @@ export async function initTrade() {
     ui.submit.disabled = true;
     say(ui.status, "Waiting for your passkey…");
     try {
+      if (Number(ui.margin.value) > availableUsd) throw new Error("Not enough balance. Tap Add funds above the amount box to deposit.");
       await guardOrThrow(Number(ui.margin.value));
       const exchange = await agentExchange(trader);
       say(ui.status, "Opening position…");
-      const [result] = await openBin(exchange, sizing.sized, data.markets, { maxNotionalUsd: maxOrderNotionalUsd });
+      const cap = slippageCap(lastEstimate);
+      const [result] = await openBin(exchange, sizing.sized, data.markets, { maxNotionalUsd: maxOrderNotionalUsd, slippage: cap });
       if (!result || result.error) throw new Error(result?.error ?? "The order was not accepted.");
-      say(ui.status, `${side === "long" ? "Long" : "Short"} ${displaySymbol(symbol)} is open.`);
+      const wanted = sizing.sized.legs[0]?.size ?? 0;
+      say(
+        ui.status,
+        wanted > 0 && result.filledSize < wanted * 0.98
+          ? `Partly filled: ${result.filledSize} of ${wanted} ${displaySymbol(symbol)}. The rest was not taken because the price moved more than ${(cap * 100).toFixed(2)}%.`
+          : `${side === "long" ? "Long" : "Short"} ${displaySymbol(symbol)} is open at ${result.avgPx === null ? "market" : px(result.avgPx)}.`,
+      );
       ui.margin.value = "";
       renderTicketSize();
       await refresh();

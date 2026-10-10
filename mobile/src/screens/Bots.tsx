@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Bot, BotMode } from "shared";
+import { HeadlineBox } from "../components/HeadlineBox";
 import { Mark } from "../components/Mark";
 import { PaperBots } from "../components/PaperBots";
 import { StrategyLab } from "../components/StrategyLab";
@@ -101,6 +102,8 @@ export function Bots({ name, labSymbol, onSelectTab, onOpenAsset }: BotsProps) {
               </Text>
             </View>
           </View>
+
+          <HeadlineBox mode={mode} />
 
           <View style={styles.ideas}>
             {ideas.map((idea) => (

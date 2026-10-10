@@ -5,6 +5,8 @@ import { closeBin, liquidityGrade, loadDeepBook, maxOrderNotionalUsd, slippageBp
 import { agentExchange, info } from "../lib/hl";
 import { AssetMark } from "../components/AssetMark";
 import { TabBar, tabBarHeight, type TabKey } from "../components/TabBar";
+import { FloorList } from "../components/FloorList";
+import { GuardBar } from "../components/GuardBar";
 import { Insights } from "../components/Insights";
 import { ScreenTitle, Switcher, Tag, ToneCard, tone } from "../components/ui";
 import { displaySymbol, loadAccountDesk, loadMarkets, type MarketData } from "../lib/market";
@@ -110,6 +112,7 @@ export function Trade({ trader, onOpenAsset, onSelectTab }: TradeProps) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        <GuardBar owner={trader.address} />
         <ScreenTitle title="Trade" right={<Tag label="Hyperliquid Testnet" dot={dark.green} />} />
 
         <Switcher
@@ -202,6 +205,7 @@ export function Trade({ trader, onOpenAsset, onSelectTab }: TradeProps) {
             );
           })
         )}
+          <FloorList trader={trader} />
           </>
         )}
       </ScrollView>

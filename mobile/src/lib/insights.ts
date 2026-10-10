@@ -3,39 +3,26 @@ import { backendUrl } from "./config";
 export type Network = "mainnet" | "testnet";
 
 export type Protocol = {
-  headline: { volume24h: number; volume7d: number; openInterest: number; tvl: number; accounts: number | null; activeAccounts: number };
-  window: { depositsUsd: number; withdrawalsUsd: number; trades: number };
+  headline: { markets: number; volume24hUsd: number; openInterestUsd: number; hip3Volume24hUsd: number };
+  markets: { symbol: string; dex: string; mark: number; changePct: number; volume24hUsd: number; openInterestUsd: number; fundingAprPct: number; shareVolume: number }[];
 };
 
-export type Liquidations = {
-  count: number;
-  lossUsd: number;
-  hours: { t: number; count: number }[];
-  recent: { t: number; symbol: string; accountId: number; address: string | null; lossUsd: number }[];
-};
+export type LeaderRow = { rank: number; address: string; displayName: string | null; equityUsd: number; pnlUsd: number; roiPct: number; volumeUsd: number };
+export type Leaderboard = { rows: LeaderRow[] };
 
-export type HeldRow = {
-  symbol: string;
-  side: "long" | "short";
-  notionalUsd: number;
-  leverage: number | null;
+export type WalletView = {
+  found: boolean;
+  address: string;
+  perpEquityUsd: number;
+  withdrawableUsd: number;
   unrealizedPnlUsd: number;
-  liquidationDistancePct: number | null;
-  accountId: number;
-  address: string | null;
+  positions: { coin: string; size: number; entryPx: number; markPx: number; positionValue: number; leverage: number; unrealizedPnl: number; liquidationDistancePct: number | null }[];
+  recentFills: { count: number; realizedPnlUsd: number; feesUsd: number; winRatePct: number; liquidations: number; makerSharePct: number };
 };
-
-export type Positions = { scanned: number; openPositions: number; openNotionalUsd: number; largest: HeldRow[]; nearest: HeldRow[] };
-
-export type WalletRow = { rank: number; accountId: number; address: string | null; netPnlUsd: number; winRate: number; closedTrades: number; tier: string };
-
-export type Wallets = { rows: WalletRow[]; indexedHours: number; backfilling: boolean };
 
 export type Insights = {
   protocol: Protocol | null;
-  liquidations: Liquidations | null;
-  positions: Positions | null;
-  wallets: Wallets | null;
+  leaderboard: Leaderboard | null;
   errors: string[];
 };
 
@@ -46,14 +33,14 @@ async function get<T>(path: string): Promise<T> {
   return body;
 }
 
+export const loadWallet = (network: Network, address: string) => get<WalletView>(`/analytics/wallet?network=${network}&address=${address}`);
+
 export async function loadInsights(network: Network): Promise<Insights> {
-  const [protocol, liquidations, positions, wallets] = await Promise.allSettled([
+  const [protocol, leaderboard] = await Promise.allSettled([
     get<Protocol>(`/analytics/protocol?network=${network}`),
-    get<Liquidations>(`/analytics/liquidations?network=${network}`),
-    get<Positions>(`/analytics/positions?network=${network}`),
-    get<Wallets>(`/analytics/leaderboard?network=${network}&sort=pnl&limit=5`),
+    get<Leaderboard>(`/analytics/leaderboard?network=${network}&sort=pnl&window=week&limit=10&minEquity=1000`),
   ]);
   const value = <T,>(result: PromiseSettledResult<T>) => (result.status === "fulfilled" ? result.value : null);
-  const errors = [protocol, liquidations, positions, wallets].flatMap((result) => (result.status === "rejected" ? [String(result.reason?.message ?? result.reason)] : []));
-  return { protocol: value(protocol), liquidations: value(liquidations), positions: value(positions), wallets: value(wallets), errors };
+  const errors = [protocol, leaderboard].flatMap((result) => (result.status === "rejected" ? [String(result.reason?.message ?? result.reason)] : []));
+  return { protocol: value(protocol), leaderboard: value(leaderboard), errors };
 }

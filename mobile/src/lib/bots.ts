@@ -12,6 +12,7 @@ import {
   type BotRuntime,
   type TradingAccount,
 } from "shared";
+import { guardForBot } from "./guardrails";
 import { agentExchange, agentReady, info } from "./hl";
 
 export const toolbox = createToolbox(info, defaultLimits);
@@ -42,7 +43,7 @@ async function ensureRuntime(): Promise<BotRuntime> {
   const exchange = await agentExchange(trader);
   const key = `opencash.bots.${trader.address.toLowerCase()}`;
   runtime = createBotRuntime({
-    deps: createHlBotDeps({ info, exchange, user: trader.address, toolbox, maxNotionalUsd: maxOrderNotionalUsd }),
+    deps: createHlBotDeps({ info, exchange, user: trader.address, toolbox, maxNotionalUsd: maxOrderNotionalUsd, guard: guardForBot }),
     onChange: notify,
     storage: {
       load: async () => {
