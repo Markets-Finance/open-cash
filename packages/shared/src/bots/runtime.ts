@@ -25,7 +25,12 @@ export type HlBotDepsConfig = {
   builder?: HlBuilder;
   slippage?: number;
   now?: () => number;
+  guard?: (card: StrategyCard, maxLossUsd: number) => Promise<{ allowed: boolean; reason: string }>;
 };
+
+export function cardMaxLossUsd(card: StrategyCard): number {
+  return (card.marginUsd * card.stopLossPct) / 100;
+}
 
 function dexOf(symbol: string): string {
   return symbol.includes(":") ? symbol.split(":")[0] : "";
@@ -58,6 +63,10 @@ export function createHlBotDeps(config: HlBotDepsConfig): BotDeps {
       ),
     checkEntry: (card, minCarry) => checkEntry(card, minCarry, config.toolbox),
     open: async (card) => {
+      if (config.guard) {
+        const verdict = await config.guard(card, cardMaxLossUsd(card));
+        if (!verdict.allowed) throw new Error(`Guardrail: ${verdict.reason}`);
+      }
       if (card.marginUsd > config.toolbox.limits.maxMarginUsd) {
         throw new Error(`Margin $${card.marginUsd} is above the $${config.toolbox.limits.maxMarginUsd} allocation cap`);
       }

@@ -39,3 +39,4 @@ export * from "./templates/index.js";
 export * from "./bots/index.js";
 export * from "./copy/index.js";
 export * from "./identity/index.js";
+export * from "./guardrails/index.js";

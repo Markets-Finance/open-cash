@@ -9,6 +9,7 @@ import {
   type HlNetwork,
 } from "shared";
 import { privateKeyToAccount } from "viem/accounts";
+import { guardrailStatus } from "../guardrails/store.js";
 import { claimLock } from "../lock.js";
 import { listBots, saveBot, type ServerBot } from "./store.js";
 import { loadKey } from "./vault.js";
@@ -50,7 +51,11 @@ export async function tickOwner(owner: string, net: HlNetwork, bots: ServerBot[]
   const builder = process.env.BUILDER_ADDRESS
     ? { address: process.env.BUILDER_ADDRESS as `0x${string}`, feeTenthsBps: Number(process.env.BUILDER_FEE_TENTHS_BPS ?? 10) }
     : undefined;
-  const deps = createHlBotDeps({ info, exchange, user, toolbox: createToolbox(info, defaultLimits, user), maxNotionalUsd: maxOrderUsd, builder });
+  const guard = async (_card: unknown, maxLossUsd: number) => {
+    const { verdict } = await guardrailStatus(owner, net, maxLossUsd);
+    return { allowed: verdict.allowed, reason: verdict.reason };
+  };
+  const deps = createHlBotDeps({ info, exchange, user, toolbox: createToolbox(info, defaultLimits, user), maxNotionalUsd: maxOrderUsd, builder, guard });
   for (const bot of bots) {
     const next = await tickBot(bot, withSharedLegGuard(deps, bot, bots));
     await saveBot({ ...next, owner: bot.owner, net: bot.net, mandate: bot.mandate });
