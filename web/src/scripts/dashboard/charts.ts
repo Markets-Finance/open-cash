@@ -2,11 +2,16 @@ import {
   CandlestickSeries,
   ColorType,
   LineSeries,
+  LineStyle,
   createChart,
   type IChartApi,
   type UTCTimestamp,
 } from "lightweight-charts";
 import type { Candle } from "shared";
+
+export type ChartOverlay = {
+  lines: { price: number; title: string; color: string; dashed?: boolean }[];
+};
 
 const palette = { text: "#c3cbc7", grid: "rgba(255,255,255,0.05)", up: "#3ecf8e", down: "#ef5b5b", line: "#7165ed" };
 
@@ -20,7 +25,7 @@ function baseChart(container: HTMLElement): IChartApi {
   });
 }
 
-export function drawCandles(container: HTMLElement, candles: Candle[], emptyMessage: string) {
+export function drawCandles(container: HTMLElement, candles: Candle[], emptyMessage: string, overlay?: ChartOverlay) {
   container.innerHTML = "";
   if (candles.length < 2) {
     container.innerHTML = `<div class="chart-empty">${emptyMessage}</div>`;
@@ -33,6 +38,17 @@ export function drawCandles(container: HTMLElement, candles: Candle[], emptyMess
     wickUpColor: palette.up,
     wickDownColor: palette.down,
     borderVisible: false,
+    autoscaleInfoProvider: overlay
+      ? (original: () => { priceRange: { minValue: number; maxValue: number } | null; margins?: { above: number; below: number } } | null) => {
+          const base = original();
+          if (!base || !base.priceRange) return base;
+          const { minValue: low, maxValue: high } = base.priceRange;
+          const reach = (high - low) / 2 + (high + low) * 0.05;
+          const mid = (high + low) / 2;
+          const prices = overlay.lines.map((l) => l.price).filter((p) => Math.abs(p - mid) <= reach);
+          return { ...base, priceRange: { minValue: Math.min(base.priceRange.minValue, ...prices), maxValue: Math.max(base.priceRange.maxValue, ...prices) } };
+        }
+      : undefined,
   });
   series.setData(
     candles.map((c) => ({
@@ -43,6 +59,11 @@ export function drawCandles(container: HTMLElement, candles: Candle[], emptyMess
       close: c.close,
     })),
   );
+  if (overlay) {
+    for (const line of overlay.lines) {
+      series.createPriceLine({ price: line.price, color: line.color, lineWidth: 2, lineStyle: line.dashed ? LineStyle.Dashed : LineStyle.Solid, axisLabelVisible: true, title: line.title });
+    }
+  }
   chart.timeScale().fitContent();
 }
 

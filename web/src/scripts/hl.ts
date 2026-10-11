@@ -5,6 +5,7 @@ import {
   loadDesk as loadHlDesk,
   loadTradeMarkets as loadHlMarkets,
   type ChartRangeKey,
+  type HlNetwork,
   type HlWallet,
 } from "shared";
 import type { Address } from "viem";
@@ -19,7 +20,7 @@ export {
   type TradeMarket,
 } from "shared";
 
-export const hlNetwork = "testnet";
+export const hlNetwork: HlNetwork = import.meta.env.PUBLIC_HL_NETWORK === "mainnet" ? "mainnet" : "testnet";
 
 export const info = createHlInfo(hlNetwork);
 

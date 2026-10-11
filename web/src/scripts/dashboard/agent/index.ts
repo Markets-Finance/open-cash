@@ -4,6 +4,7 @@ import { addLeg, initCard, setCard } from "./card";
 import { initLab } from "../lab";
 import { onAddLeg, pushOutcome } from "./feed";
 import { hlNetwork } from "../../hl";
+import { mountCombo } from "../combo";
 import { run, toolbox } from "./session";
 
 const backend = import.meta.env.PUBLIC_BACKEND_URL ?? "http://localhost:8787";
@@ -34,13 +35,19 @@ export function initAgent() {
   const hint = query("[data-agent-hint]");
   const input = query<HTMLInputElement>("[data-agent-input]");
 
-  document.querySelectorAll<HTMLButtonElement>("[data-tool]").forEach((button) =>
-    button.addEventListener("click", async () => {
-      button.disabled = true;
-      pushOutcome(await run(button.dataset.tool!, readArgs(button.dataset.tool!)));
-      button.disabled = false;
-    }),
-  );
+  const toolNames: Record<string, string> = {
+    list_markets: "Markets",
+    market_snapshot: "Snapshot",
+    funding_history: "Funding",
+    price_stats: "Price stats",
+    order_book: "Order book",
+    compare_pair: "Compare pair",
+  };
+  mountCombo(query("[data-tool-combo]"), {
+    buttonHtml: "Run an analysis tool",
+    items: Object.entries(toolNames).map(([key, label]) => ({ key, label })),
+    onPick: async (tool) => pushOutcome(await run(tool, readArgs(tool))),
+  });
 
   query("[data-agent-ideas]").innerHTML = bins
     .map((bin, index) => `<button type="button" class="chip" data-idea="${index}">${esc(bin.name)}</button>`)

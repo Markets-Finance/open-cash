@@ -1,7 +1,8 @@
 import { closeBin, estimateMarketOrder, marketKind, marketSession, weekendGapStats, type WeekendGapStats, maxOrderNotionalUsd, openBin, sizeBin, slippageWarnBps, type Bin, type ChartRangeKey, type ExecutionEstimate, type HlPosition } from "shared";
 import { agentExchange } from "../hlSession";
 import { drawCandles } from "./charts";
-import { changeClass, errorText, markForSymbol, px, query, say, usd } from "./dom";
+import { buildOverlay } from "./chartOverlay";
+import { withFundingHint, changeClass, errorText, markForSymbol, px, query, say, usd } from "./dom";
 import { getCandles } from "./candles";
 import { getDesk } from "./desk";
 import { displaySymbol, getMarketData, getMarketView } from "./market";
@@ -9,6 +10,7 @@ import { guardOrThrow } from "./guardrails";
 import { info } from "../hl";
 import { initBoard } from "./board";
 import { initFloorCard, initFloorList } from "./floor";
+import { initPositionCard } from "./positionCard";
 import { requireTrader } from "./state";
 import { activateTab } from "./tabs";
 
@@ -53,6 +55,7 @@ function elements() {
     gapStats: query("[data-gap-stats]"),
     gapNote: query("[data-gap-note]"),
     chart: query("[data-trade-chart]"),
+    legend: query("[data-trade-legend]"),
     desk: query("[data-trade-desk]"),
     deskStatus: query("[data-trade-desk-status]"),
     title: query("[data-trade-ticket-title]"),
@@ -118,6 +121,7 @@ export async function initTrade() {
     syncLeverageRange();
     renderSession();
     void renderGaps();
+    document.dispatchEvent(new Event("floor:refresh"));
   }
 
   function renderSession() {
@@ -184,7 +188,11 @@ export async function initTrade() {
     const shown = symbol;
     try {
       const candles = await getCandles(market.name, range);
-      if (shown === symbol) drawCandles(ui.chart, candles, "No trades in this range on Hyperliquid testnet.");
+      const built = await buildOverlay(market.name, candles).catch(() => null);
+      if (shown === symbol) {
+        drawCandles(ui.chart, candles, "No trades in this range on Hyperliquid testnet.", built?.overlay);
+        ui.legend.textContent = built?.legend ?? "";
+      }
     } catch (error) {
       ui.chart.innerHTML = `<div class="chart-empty">${errorText(error)}</div>`;
     }
@@ -301,6 +309,10 @@ export async function initTrade() {
     ui.note.textContent = desk.equity > 0 ? `${usd(used)} in margin on ${desk.positions.length} open positions` : "No funds yet. Use Deposit to add USDC.";
     ui.updated.textContent = desk.updatedAt.toLocaleTimeString();
     renderDesk();
+    if (!ui.asset.hidden) {
+      void renderChart();
+      void paintPosition();
+    }
   }
 
   function showAsset(next: string) {
@@ -309,6 +321,7 @@ export async function initTrade() {
     ui.asset.hidden = false;
     renderAll();
     void loadStats();
+    void paintPosition();
     window.scrollTo({ top: 0 });
   }
 
@@ -440,14 +453,57 @@ export async function initTrade() {
       renderTicketSize();
       await refresh();
     } catch (error) {
-      say(ui.status, errorText(error), "error");
+      say(ui.status, withFundingHint(symbol, errorText(error)), "error");
     } finally {
       ui.submit.disabled = false;
     }
   });
 
+  const modeButtons = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-ticket-mode]"));
+  const modePanes = Array.from(document.querySelectorAll<HTMLElement>("[data-ticket-pane]"));
+  function setMode(mode: "floor" | "pro") {
+    modeButtons.forEach((b) => b.classList.toggle("is-on", b.dataset.ticketMode === mode));
+    modePanes.forEach((pane) => (pane.hidden = pane.dataset.ticketPane !== mode));
+    try {
+      localStorage.setItem("opencash.ticket.mode.v2", mode);
+    } catch {
+      return;
+    }
+  }
+  modeButtons.forEach((b) => b.addEventListener("click", () => setMode(b.dataset.ticketMode as "floor" | "pro")));
+  let savedMode: string | null = null;
+  try {
+    savedMode = localStorage.getItem("opencash.ticket.mode.v2");
+  } catch {
+    savedMode = null;
+  }
+  setMode(savedMode === "floor" ? "floor" : "pro");
+
+  const paintPosition = initPositionCard({
+    symbol: () => symbol,
+    addToPosition: (next) => {
+      setSide(next);
+      setMode("pro");
+      renderMarketHead();
+      renderTicketSize();
+      ui.margin.focus();
+      ui.margin.scrollIntoView({ behavior: "smooth", block: "center" });
+    },
+    changed: () => {
+      void refresh();
+      void renderChart();
+    },
+  });
+  document.addEventListener("floor:changed", () => void paintPosition());
   initFloorList();
-  initFloorCard(() => ({ symbol, isLong: side === "long" }));
+  initFloorCard({
+    current: () => ({ symbol, isLong: side === "long" }),
+    setSide: (next) => {
+      setSide(next);
+      renderMarketHead();
+      renderTicketSize();
+    },
+  });
   renderAll();
   renderMarkets();
   if (pendingAsset) {

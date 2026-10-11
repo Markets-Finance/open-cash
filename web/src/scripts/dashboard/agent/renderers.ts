@@ -38,23 +38,29 @@ function snapshotRows(s: MarketSnapshot): Rows {
   ];
 }
 
-function marketsTable(list: MarketSnapshot[]): string {
-  const rows = list
+type MarketRow = { symbol: string; mark: number; change24hPct: number; volume24hUsd: number; openInterestUsd: number; maxLeverage: number; fundingAprPct: number };
+
+function marketsTable(list: MarketRow[]): string {
+  const rows = [...list]
+    .sort((x, y) => y.volume24hUsd - x.volume24hUsd)
+    .slice(0, 60)
     .map(
       (s) => `<tr>
-        <td><div class="cell-identity">${markForSymbol(s.symbol)}<b>${esc(s.symbol)}</b></div></td>
+        <td><div class="cell-identity">${markForSymbol(s.symbol)}<b>${esc(s.symbol.split(":").pop() ?? s.symbol)}</b></div></td>
         <td class="cell-value">${px(s.mark)}</td>
-        <td class="cell-muted">${s.spreadBps.toFixed(1)} bps</td>
+        <td class="cell-value ${changeClass(s.change24hPct)}">${signed(s.change24hPct, 2)}%</td>
         <td class="cell-muted">${compact(s.volume24hUsd)}</td>
-        <td class="cell-value ${changeClass(s.funding.meanAprPct)}">${signed(s.funding.meanAprPct, 0)}%</td>
+        <td class="cell-muted">${compact(s.openInterestUsd)}</td>
+        <td class="cell-muted">${s.maxLeverage}x</td>
+        <td class="cell-value ${changeClass(-s.fundingAprPct)}">${signed(s.fundingAprPct, 0)}%</td>
         <td><button type="button" class="link-btn" data-add-leg="${esc(s.symbol)}" data-dir="long">+Long</button>
             <button type="button" class="link-btn" data-add-leg="${esc(s.symbol)}" data-dir="short">+Short</button></td>
       </tr>`,
     )
     .join("");
   return `<div class="table-wrap"><table class="data-table">
-    <thead><tr><th>Market</th><th>Mark</th><th>Spread</th><th>Volume</th><th>Funding 7d</th><th></th></tr></thead>
-    <tbody>${rows}</tbody></table></div>`;
+    <thead><tr><th>Market</th><th>Mark</th><th>24h</th><th>Volume</th><th>Open interest</th><th>Max lev</th><th>Funding a year</th><th></th></tr></thead>
+    <tbody>${rows}</tbody></table></div><p class="agent__note">Top 60 markets by 24h volume.</p>`;
 }
 
 function depthRows(depth: Record<string, number>): string {
@@ -80,7 +86,7 @@ type Any = Record<string, any>;
 function renderResult(tool: string, r: Any): string {
   switch (tool) {
     case "list_markets":
-      return marketsTable(r as unknown as MarketSnapshot[]);
+      return marketsTable(r as unknown as MarketRow[]);
     case "market_snapshot":
       return stats(snapshotRows(r as MarketSnapshot));
     case "funding_history":

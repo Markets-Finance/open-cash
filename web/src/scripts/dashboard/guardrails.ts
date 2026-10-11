@@ -34,7 +34,7 @@ export function loadGuardStatus(maxLossUsd: number | null): Promise<Status> {
 
 export async function guardOrThrow(maxLossUsd: number | null): Promise<void> {
   const { verdict } = await loadGuardStatus(maxLossUsd);
-  if (!verdict.allowed) throw new Error(`Guardrail: ${verdict.reason}`);
+  if (!verdict.allowed) throw new Error(`Guardrail: ${verdict.reason}. Your limits are under Account, Loss limits. Tightening is instant, loosening takes 24 hours.`);
 }
 
 export async function guardForBot(_card: unknown, maxLossUsd: number | null): Promise<{ allowed: boolean; reason: string }> {
@@ -50,7 +50,11 @@ export async function paintGuardBar() {
   const bar = document.querySelector<HTMLElement>("[data-guard-bar]");
   if (!bar || !session.trader) return;
   try {
-    const { settings, verdict } = await loadGuardStatus(null);
+    const { configured, settings, verdict } = await loadGuardStatus(null);
+    if (!configured) {
+      bar.hidden = true;
+      return;
+    }
     bar.hidden = false;
     const locked = verdict.lockedUntil !== null && verdict.lockedUntil > Date.now();
     bar.dataset.tone = locked ? "locked" : verdict.remainingTodayUsd < settings.dailyLossLimitUsd * 0.25 ? "warn" : "ok";

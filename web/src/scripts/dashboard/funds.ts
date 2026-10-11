@@ -1,5 +1,5 @@
-import { depositPermitTypedData, minDepositUsdc, toUsdcUnits, withdrawUsd } from "shared";
-import { hlNetwork } from "../hl";
+import { depositPermitTypedData, loadBalances, minDepositUsdc, moveFunds, toUsdcUnits, venues, withdrawUsd, type Venue } from "shared";
+import { hlNetwork, info } from "../hl";
 import { mainExchange } from "../hlSession";
 import { errorText, esc, query, usd } from "./dom";
 import { getDesk } from "./desk";
@@ -166,11 +166,79 @@ function openWithdraw() {
   });
 }
 
+function openMove() {
+  const trader = requireTrader();
+  const panel = openModal(`
+    <div class="modal__head"><span class="modal__title">Move money between balances</span><button type="button" class="modal__close" data-close>×</button></div>
+    <p class="quote-line">Your money sits in three places on Hyperliquid. Each kind of trade uses its own. This only moves money inside your own account.</p>
+    <div class="stat-grid" data-move-balances><p class="empty">Loading…</p></div>
+    <div class="field-row">
+      <label class="field"><span>From</span><select data-move-from>${venues.map((v) => `<option value="${v.key}">${esc(v.label)}</option>`).join("")}</select></label>
+      <label class="field"><span>To</span><select data-move-to>${venues.map((v, i) => `<option value="${v.key}"${i === 1 ? " selected" : ""}>${esc(v.label)}</option>`).join("")}</select></label>
+    </div>
+    <label class="field"><span>Amount (USDC)</span><div class="field-row"><input data-move-amount type="number" min="0" step="any" placeholder="0" /><button type="button" class="btn" data-move-max>Max</button></div></label>
+    <p class="quote-line" data-move-hint></p>
+    <button type="button" class="btn btn--primary" data-move-go disabled>Move</button>
+    <p class="status-line" data-move-status></p>
+  `);
+  const balancesEl = query("[data-move-balances]", panel);
+  const fromEl = query<HTMLSelectElement>("[data-move-from]", panel);
+  const toEl = query<HTMLSelectElement>("[data-move-to]", panel);
+  const amountEl = query<HTMLInputElement>("[data-move-amount]", panel);
+  const hintEl = query("[data-move-hint]", panel);
+  const goEl = query<HTMLButtonElement>("[data-move-go]", panel);
+  const statusEl = query("[data-move-status]", panel);
+  let balances: Record<Venue, number> | null = null;
+
+  function paint() {
+    const from = fromEl.value as Venue;
+    const to = toEl.value as Venue;
+    const value = Number(amountEl.value) || 0;
+    hintEl.textContent = venues.find((v) => v.key === to)?.hint ?? "";
+    goEl.disabled = balances === null || from === to || value <= 0 || value > balances[from];
+  }
+
+  async function load() {
+    try {
+      balances = await loadBalances(info, trader.address);
+      balancesEl.innerHTML = venues.map((v) => `<div class="stat"><small>${esc(v.label)}</small><b>${usd(balances![v.key])}</b></div>`).join("");
+    } catch (error) {
+      balancesEl.innerHTML = `<p class="status-line" data-tone="error">${esc(errorText(error))}</p>`;
+    }
+    paint();
+  }
+  void load();
+
+  [fromEl, toEl, amountEl].forEach((el) => el.addEventListener("input", paint));
+  query("[data-move-max]", panel).addEventListener("click", () => {
+    amountEl.value = String(Math.floor((balances?.[fromEl.value as Venue] ?? 0) * 100) / 100);
+    paint();
+  });
+  goEl.addEventListener("click", async () => {
+    goEl.disabled = true;
+    statusEl.dataset.tone = "";
+    statusEl.textContent = "Moving…";
+    try {
+      await moveFunds(mainExchange(trader), trader.address, Number(amountEl.value), fromEl.value as Venue, toEl.value as Venue);
+      statusEl.textContent = `Moved ${usd(Number(amountEl.value))}.`;
+      amountEl.value = "";
+      await load();
+      document.dispatchEvent(new CustomEvent("balance:changed"));
+    } catch (error) {
+      statusEl.dataset.tone = "error";
+      statusEl.textContent = errorText(error);
+    } finally {
+      paint();
+    }
+  });
+}
+
 export function initFunds() {
   document.addEventListener("click", (event) => {
     const target = event.target as HTMLElement;
     if (target.closest("[data-open-deposit]")) openDeposit();
     if (target.closest("[data-open-send]")) openWithdraw();
+    if (target.closest("[data-open-move]")) openMove();
   });
 }
 

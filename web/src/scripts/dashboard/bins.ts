@@ -4,8 +4,10 @@ import { agentExchange } from "../hlSession";
 import { info } from "../hl";
 import { setCard } from "./agent/card";
 import { addBotFromCard } from "./bots";
-import { errorText, legStackHtml, query, usd } from "./dom";
+import { errorText, legStackHtml, markForSymbol, query, usd, withFundingHint } from "./dom";
 import { getDesk } from "./desk";
+import { mountCombo } from "./combo";
+import { binFloorPreview, binTimebox, floorPercentChoices, openFlooredBin } from "./floor";
 import { guardOrThrow } from "./guardrails";
 import { initHome } from "./home";
 import { displaySymbol, getMarketData, getPositions } from "./market";
@@ -61,12 +63,14 @@ function openBinModal(bin: Bin, custom = false) {
     </div>
     <p class="quote-line">${bin.thesis}</p>
     ${bin.tags?.includes("weekend") && bin.legs[0] ? `<p class="quote-line">${marketSession(bin.legs[0].symbol).label}.</p>` : ""}
-    ${custom ? `<div class="pick-grid" data-bin-picks>Loading markets…</div>` : ""}
+    ${custom ? `<div data-bin-picker></div><div class="pick-selected" data-bin-selected><p class="quote-line">Loading markets…</p></div>` : ""}
     <div class="chip-row" data-bin-modes>${weightModes.map((m) => `<button type="button" class="chip${m.key === mode ? " chip--active" : ""}" data-mode="${m.key}" title="${m.hint}">${m.label}</button>`).join("")}</div>
     <div class="amount-row">
       <span>$</span>
       <input type="number" min="0" step="any" placeholder="0" data-bin-amount />
     </div>
+    <div class="chip-row" data-bin-floors>${floorPercentChoices.map((v) => `<button type="button" class="chip${v === 0.8 ? " chip--active" : ""}" data-bin-floor="${v}">${Math.round(v * 100)}% floor</button>`).join("")}<button type="button" class="chip" data-bin-floor="none">No floor</button></div>
+    <label class="quote-line" data-bin-timebox-row hidden><input type="checkbox" data-bin-timebox /> <span data-bin-timebox-label></span></label>
     <button type="button" class="btn btn--primary" data-bin-size>Size this bin</button>
     <div data-bin-sizing></div>
     <div class="btn-row">
@@ -76,6 +80,20 @@ function openBinModal(bin: Bin, custom = false) {
     <p class="status-line" data-bin-status></p>
   `);
   const status = query("[data-bin-status]", detail);
+  let floorPct: number | null = 0.8;
+  const timeboxRow = query("[data-bin-timebox-row]", detail);
+  const timeboxEl = query<HTMLInputElement>("[data-bin-timebox]", detail);
+  detail.querySelectorAll<HTMLElement>("[data-bin-floor]").forEach((chip) =>
+    chip.addEventListener("click", () => {
+      floorPct = chip.dataset.binFloor === "none" ? null : Number(chip.dataset.binFloor);
+      detail.querySelectorAll<HTMLElement>("[data-bin-floor]").forEach((el) => el.classList.toggle("chip--active", el === chip));
+    }),
+  );
+  const reopen = bin.tags?.includes("weekend") ? binTimebox(bin) : null;
+  if (reopen !== null) {
+    timeboxRow.hidden = false;
+    query("[data-bin-timebox-label]", detail).textContent = `Close automatically when the market reopens (${new Date(reopen).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" })})`;
+  }
   const sizingEl = query("[data-bin-sizing]", detail);
   const amountInput = query<HTMLInputElement>("[data-bin-amount]", detail);
 
@@ -94,21 +112,44 @@ function openBinModal(bin: Bin, custom = false) {
 
   if (custom) {
     void getMarketData().then((data) => {
-      const grid = query("[data-bin-picks]", detail);
-      const symbols = [...data.markets.values()].filter((m) => m.dayNtlVlm > 0).sort((a, b) => b.dayNtlVlm - a.dayNtlVlm).slice(0, 60).map((m) => m.name);
-      grid.innerHTML = symbols
-        .map((symbol) => `<div class="pick"><b>${displaySymbol(symbol)}</b><button type="button" class="chip" data-pick="${symbol}:long">Long</button><button type="button" class="chip" data-pick="${symbol}:short">Short</button></div>`)
-        .join("");
-      grid.addEventListener("click", (event) => {
-        const button = (event.target as HTMLElement).closest<HTMLElement>("[data-pick]");
-        if (!button) return;
-        const [symbol, direction] = button.dataset.pick!.split(":") as [string, "long" | "short"];
-        if (picks.get(symbol) === direction) picks.delete(symbol);
-        else picks.set(symbol, direction);
-        grid.querySelectorAll<HTMLElement>(`[data-pick^="${symbol}:"]`).forEach((el) =>
-          el.classList.toggle("chip--active", picks.get(symbol) === el.dataset.pick!.split(":")[1]),
-        );
+      const picker = query("[data-bin-picker]", detail);
+      const selected = query("[data-bin-selected]", detail);
+      const ranked = [...data.markets.values()].filter((m) => m.dayNtlVlm > 0).sort((a, b) => b.dayNtlVlm - a.dayNtlVlm);
+
+      function paintSelected() {
+        selected.innerHTML =
+          picks.size === 0
+            ? `<p class="quote-line">No markets yet. Add at least one.</p>`
+            : [...picks]
+                .map(
+                  ([symbol, direction]) =>
+                    `<div class="pick"><span class="pick__name">${markForSymbol(symbol)}<b>${displaySymbol(symbol)}</b></span><button type="button" class="chip${direction === "long" ? " chip--active" : ""}" data-pick-dir="${symbol}:long">Long</button><button type="button" class="chip${direction === "short" ? " chip--active" : ""}" data-pick-dir="${symbol}:short">Short</button><button type="button" class="link-btn" data-pick-remove="${symbol}">Remove</button></div>`,
+                )
+                .join("");
+      }
+
+      mountCombo(picker, {
+        buttonHtml: "Add a market",
+        searchPlaceholder: `Search ${ranked.length} markets`,
+        items: ranked.map((m) => ({ key: m.name, label: displaySymbol(m.name), markHtml: markForSymbol(m.name), group: m.name.includes(":") ? "Stocks, commodities and indices" : "Crypto" })),
+        onPick: (symbol) => {
+          if (!picks.has(symbol)) picks.set(symbol, "long");
+          paintSelected();
+        },
       });
+      selected.addEventListener("click", (event) => {
+        const target = event.target as HTMLElement;
+        const dir = target.closest<HTMLElement>("[data-pick-dir]");
+        const remove = target.closest<HTMLElement>("[data-pick-remove]");
+        if (dir) {
+          const raw = dir.dataset.pickDir!;
+          const cut = raw.lastIndexOf(":");
+          picks.set(raw.slice(0, cut), raw.slice(cut + 1) as "long" | "short");
+        }
+        if (remove) picks.delete(remove.dataset.pickRemove!);
+        if (dir || remove) paintSelected();
+      });
+      paintSelected();
     });
   }
 
@@ -153,6 +194,39 @@ function openBinModal(bin: Bin, custom = false) {
     status.textContent = "Reading every leg…";
     status.dataset.tone = "";
     sizingEl.innerHTML = "";
+    if (floorPct !== null) {
+      try {
+        const data = await getMarketData();
+        const floorChoice = floorPct;
+        const preview = binFloorPreview(chosen, data.markets, amount, floorChoice, 3);
+        status.textContent = "";
+        sizingEl.innerHTML =
+          preview.legs
+            .map((l) => `<div class="leg-row"><span>${l.isLong ? "Long" : "Short"} ${displaySymbol(l.symbol)} · 3x</span><span>${usd(l.sleeveUsd)} traded · ${usd(l.notionalUsd)} position</span></div>`)
+            .join("") +
+          `<div class="leg-row"><span>You can't end below</span><span>${usd(preview.floorUsd)}</span></div><div class="leg-row"><span>Most you can lose</span><span>${usd(preview.maxLossUsd)}</span></div>` +
+          (preview.blocked ? `<p class="warn-line">${preview.blocked} Raise the amount or pick a smaller floor.</p>` : `<button type="button" class="btn btn--primary" data-bin-confirm style="margin-top:12px">Open with a floor</button>`);
+        const go = sizingEl.querySelector<HTMLButtonElement>("[data-bin-confirm]");
+        go?.addEventListener("click", async () => {
+          go.disabled = true;
+          status.dataset.tone = "";
+          try {
+            status.textContent = "Lending the floor and opening every leg…";
+            const records = await openFlooredBin(chosen, data.markets, amount, floorChoice, 3, timeboxEl.checked && !timeboxRow.hidden);
+            status.textContent = `${bin.name} is open with ${usd(records.reduce((sum, r) => sum + r.floorUsd, 0))} held as the floor.`;
+            await getPositions(true);
+            void initHome();
+          } catch (error) {
+            status.dataset.tone = "error";
+            status.textContent = withFundingHint(chosen.legs.map((l) => l.symbol), errorText(error));
+            go.disabled = false;
+          }
+        });
+      } catch (error) {
+        fail(error);
+      }
+      return;
+    }
     try {
       const data = await getMarketData();
       const { sized, issues, usedMode } = await planBin(inputSource, chosen, amount, data.markets, mode);

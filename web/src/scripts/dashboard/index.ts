@@ -4,6 +4,7 @@ import { initAnalytics } from "./analytics";
 import { initBins } from "./bins";
 import { initBots, startBots } from "./bots";
 import { initGate } from "./gate";
+import { startAlerts } from "./alerts";
 import { startGuardBar } from "./guardrails";
 import { initHome } from "./home";
 import { initRanks } from "./ranks";
@@ -33,5 +34,6 @@ initBots();
 initGate(() => {
   void initHome();
   startGuardBar();
+  startAlerts();
   void startBots();
 });

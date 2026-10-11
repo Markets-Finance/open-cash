@@ -61,6 +61,20 @@
             </div>
           </div>
           <div class="chart-area chart-area--tall" data-trade-chart></div>
+          <p class="chart-legend" data-trade-legend></p>
+        </div>
+        <div class="card" data-position-card hidden>
+          <span class="panel__label">Your position</span>
+          <div data-position-stats></div>
+          <div data-position-tools></div>
+          <p class="status-line" data-position-status></p>
+          <details class="pos-more">
+            <summary>Orders and history</summary>
+            <span class="panel__label">Open orders</span>
+            <div data-position-orders></div>
+            <span class="panel__label">Recent fills</span>
+            <div data-position-fills></div>
+          </details>
         </div>
         <div class="card" data-gap-card hidden>
           <span class="panel__label">Weekend gaps</span>
@@ -77,14 +91,18 @@
       </div>
 
       <aside class="trade-ticket-bar">
-        <div class="card trade-ticket">
+        <div class="side-switch" role="tablist" data-ticket-mode-switch>
+          <button type="button" class="side-switch__btn is-on" data-ticket-mode="pro">Simple</button>
+          <button type="button" class="side-switch__btn" data-ticket-mode="floor">Protected</button>
+        </div>
+        <div class="card trade-ticket" data-ticket-pane="pro">
           <span class="card__label" data-trade-ticket-title>Order</span>
           <div class="side-switch" role="tablist">
             <button type="button" class="side-switch__btn side-switch__btn--long is-on" data-side="long">Long</button>
             <button type="button" class="side-switch__btn side-switch__btn--short" data-side="short">Short</button>
           </div>
           <div class="amount-box">
-            <div class="amount-box__head"><span>Margin</span><small><span data-ticket-available>Available —</span> · <button type="button" class="link-btn" data-open-deposit>Add funds</button></small></div>
+            <div class="amount-box__head"><span>Margin</span><small><span data-ticket-available>Available —</span> · <button type="button" class="link-btn" data-open-deposit>Add funds</button> · <button type="button" class="link-btn" data-open-send>Withdraw</button></small></div>
             <div class="amount-box__row">
               <span class="amount-box__cur">$</span>
               <input type="number" min="0" step="any" placeholder="0" inputmode="decimal" data-ticket-margin />
@@ -108,9 +126,13 @@
           <button type="button" class="btn btn--primary" data-ticket-submit>Place order</button>
           <p class="status-line" data-ticket-status></p>
         </div>
-        <div class="card trade-ticket">
-          <span class="card__label">Keep a floor</span>
-          <p class="quote-line">Lend most of the money and trade with the rest. The most you can lose is the traded part. The sleeve must be $10 or more once leveraged, and $10.50 or less on testnet.</p>
+        <div class="card trade-ticket" data-ticket-pane="floor" hidden>
+          <span class="card__label">Protected trade</span>
+          <p class="quote-line">Most of your money stays safe and earns interest as a floor. Only the rest is traded, so that is the most you can lose. The sleeve must be $10 or more once leveraged, and $100 or less on testnet.</p>
+          <div class="side-switch" role="tablist">
+            <button type="button" class="side-switch__btn side-switch__btn--long is-on" data-fside="long">Long</button>
+            <button type="button" class="side-switch__btn side-switch__btn--short" data-fside="short">Short</button>
+          </div>
           <div class="amount-box">
             <div class="amount-box__head"><span>Total to commit</span></div>
             <div class="amount-box__row">
@@ -124,6 +146,7 @@
             <div class="lev__head"><span>Trade leverage</span><b data-floor-lev-label>3x</b></div>
             <input type="range" class="lev__range" min="1" max="5" step="1" value="3" data-floor-lev aria-label="Floor trade leverage" />
           </div>
+          <label class="quote-line" data-floor-timebox-row hidden><input type="checkbox" data-floor-timebox /> <span data-floor-timebox-label></span></label>
           <div class="cost" data-floor-preview></div>
           <button type="button" class="btn btn--primary" data-floor-open disabled>Open with a floor</button>
           <p class="status-line" data-floor-status></p>

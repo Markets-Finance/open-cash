@@ -48,3 +48,9 @@ export async function avatars(): Promise<AvatarModule> {
   avatarModule ??= await import("../../lib/avatar");
   return avatarModule;
 }
+
+export function withFundingHint(symbols: string | string[], message: string): string {
+  const list = Array.isArray(symbols) ? symbols : [symbols];
+  if (!list.some((s) => s.includes(":")) || !/margin|perp|insufficient|balance|available/i.test(message)) return message;
+  return `${message} Stocks and commodities trade from their own balance. Tap Move on Home to fund it.`;
+}

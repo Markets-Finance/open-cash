@@ -23,8 +23,17 @@ import Mark from "../Mark.astro";
           <label class="gfield"><span>Name</span><input name="name" type="text" autocomplete="name" placeholder="Ada Lovelace" /></label>
           <label class="gfield"><span>Email</span><input name="email" type="email" autocomplete="email" placeholder="ada@example.com" /></label>
         </div>
+        <div class="gate__fields" data-gate-import-block hidden>
+          <label class="gfield gfield--check"><input type="checkbox" data-gate-import-toggle /> <span>I already have a wallet to bring in</span></label>
+          <div data-gate-import-fields hidden>
+            <label class="gfield"><span>Address you expect</span><input name="importAddress" type="text" autocomplete="off" spellcheck="false" placeholder="0x…" /></label>
+            <label class="gfield"><span>Private key</span><input name="importKey" type="password" autocomplete="off" spellcheck="false" placeholder="0x… (64 hex characters)" /></label>
+            <p class="gate__hint">The key is encrypted with your new passkey and stays on this device. It is never sent anywhere.</p>
+          </div>
+        </div>
         <p class="gate__status" data-gate-status role="status"></p>
         <button type="submit" class="gate__go" data-gate-go>Sign in</button>
+        <button type="button" class="gate__link" data-gate-import>Have a wallet? Import it</button>
       </form>
     </div>
   </section>

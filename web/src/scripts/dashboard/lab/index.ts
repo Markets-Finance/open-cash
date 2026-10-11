@@ -6,16 +6,61 @@ import { initPaper } from "./paper";
 import { labState } from "./state";
 import { renderTiles } from "./tiles";
 
+let comboWired = false;
+
+function marketItem(symbol: string): string {
+  const name = symbol.split(":").pop() ?? symbol;
+  return `<button type="button" class="combo__item" data-lab-market="${esc(symbol)}" aria-pressed="${symbol === labState.symbol}">${markForSymbol(symbol)}<span>${esc(name)}</span></button>`;
+}
+
 function paintMarkets() {
   const link = query<HTMLButtonElement>("[data-lab-trade]");
   link.dataset.openAsset = labState.symbol;
-  link.textContent = `Trade ${labState.symbol} ↗`;
-  query("[data-lab-markets]").innerHTML = labState.symbols
-    .map(
-      (symbol) =>
-        `<button type="button" class="chip chip--market" data-lab-market="${esc(symbol)}" aria-pressed="${symbol === labState.symbol}">${markForSymbol(symbol)}${esc(symbol)}</button>`,
-    )
-    .join("");
+  link.textContent = `Trade ${labState.symbol.split(":").pop()} ↗`;
+  const crypto = labState.symbols.filter((symbol) => !symbol.includes(":"));
+  const traditional = labState.symbols.filter((symbol) => symbol.includes(":"));
+  const current = labState.symbol.split(":").pop() ?? labState.symbol;
+  query("[data-lab-markets]").innerHTML = `
+    <div class="combo" data-combo>
+      <button type="button" class="combo__btn" data-combo-toggle aria-expanded="false">${markForSymbol(labState.symbol)}<b>${esc(current)}</b><span aria-hidden="true">▾</span></button>
+      <div class="combo__panel" data-combo-panel hidden>
+        <input class="combo__search" data-combo-search type="search" placeholder="Search ${labState.symbols.length} markets" autocomplete="off" />
+        <div class="combo__list" data-combo-list>
+          <p class="combo__group" data-combo-group>Crypto</p>${crypto.map(marketItem).join("")}
+          <p class="combo__group" data-combo-group>Stocks, commodities and indices</p>${traditional.map(marketItem).join("")}
+        </div>
+      </div>
+    </div>`;
+  const toggle = query<HTMLButtonElement>("[data-combo-toggle]");
+  const panel = query("[data-combo-panel]");
+  const search = query<HTMLInputElement>("[data-combo-search]");
+  toggle.addEventListener("click", () => {
+    panel.hidden = !panel.hidden;
+    toggle.setAttribute("aria-expanded", String(!panel.hidden));
+    if (!panel.hidden) search.focus();
+  });
+  search.addEventListener("input", () => {
+    const needle = search.value.trim().toLowerCase();
+    panel.querySelectorAll<HTMLElement>("[data-lab-market]").forEach((item) => {
+      item.hidden = needle !== "" && !item.dataset.labMarket!.toLowerCase().includes(needle);
+    });
+    panel.querySelectorAll<HTMLElement>("[data-combo-group]").forEach((group) => {
+      let next = group.nextElementSibling as HTMLElement | null;
+      let any = false;
+      while (next && !next.hasAttribute("data-combo-group")) {
+        if (!next.hidden) any = true;
+        next = next.nextElementSibling as HTMLElement | null;
+      }
+      group.hidden = !any;
+    });
+  });
+  if (!comboWired) {
+    comboWired = true;
+    document.addEventListener("click", (event) => {
+      const open = document.querySelector<HTMLElement>("[data-combo-panel]:not([hidden])");
+      if (open && !(event.target as HTMLElement).closest("[data-combo]")) open.hidden = true;
+    });
+  }
 }
 
 function paintDays() {

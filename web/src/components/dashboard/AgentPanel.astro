@@ -37,14 +37,7 @@ import StrategyLab from "./StrategyLab.astro";
 
       <div class="agent__tools" data-agent-tools>
         <span class="panel__label">Analysis tools</span>
-        <div class="chip-row">
-          <button type="button" class="chip" data-tool="list_markets">Markets</button>
-          <button type="button" class="chip" data-tool="market_snapshot">Snapshot</button>
-          <button type="button" class="chip" data-tool="funding_history">Funding</button>
-          <button type="button" class="chip" data-tool="price_stats">Price stats</button>
-          <button type="button" class="chip" data-tool="order_book">Order book</button>
-          <button type="button" class="chip" data-tool="compare_pair">Compare pair</button>
-        </div>
+        <div data-tool-combo></div>
         <div class="agent__args" data-agent-args>
           <label class="field"><span>Market</span><input data-arg="symbol" value="BTC" /></label>
           <label class="field"><span>Long</span><input data-arg="long" value="ETH" /></label>
