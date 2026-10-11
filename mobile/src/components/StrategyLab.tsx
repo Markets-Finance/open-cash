@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import * as templates from "shared";
-import { defaultLimits } from "shared";
+import { defaultLimits, maxLiveLeverage } from "shared";
 import { addPaper, loadPapers, loadSeries } from "../lib/lab";
 import { toolbox } from "../lib/bots";
+import { hlNetwork } from "../lib/hl";
+import { liveAct, reviewLive, type Preflight } from "../lib/live";
 import { dark, family, space, touch } from "../theme";
 import { AssetMark } from "./AssetMark";
 import { meta, money, pct, tints } from "./labShared";
+import { PreflightView } from "./LiveBots";
+import { MarketPicker } from "./MarketPicker";
 import { SelectPill, tone } from "./ui";
 
 type Stage = "simulate" | "paper" | "live";
@@ -96,7 +100,7 @@ function WeekBars({ result }: { result: templates.SimResult }) {
   );
 }
 
-export function StrategyLab({ onOpenAsset, initialSymbol }: { onOpenAsset: (symbol: string) => void; initialSymbol?: string | null }) {
+export function StrategyLab({ onOpenAsset, initialSymbol, onLive }: { onOpenAsset: (symbol: string) => void; initialSymbol?: string | null; onLive?: () => void }) {
   const [symbols, setSymbols] = useState<string[]>([]);
   const [symbol, setSymbol] = useState("");
   const [resolution, setResolution] = useState(3600);
@@ -108,6 +112,9 @@ export function StrategyLab({ onOpenAsset, initialSymbol }: { onOpenAsset: (symb
   const [allocation, setAllocation] = useState(100);
   const [stage, setStage] = useState<Stage>("simulate");
   const [note, setNote] = useState<string | null>(null);
+  const [liveLeverage, setLiveLeverage] = useState(2);
+  const [review, setReview] = useState<{ id: string; preflight: Preflight } | null>(null);
+  const [liveBusy, setLiveBusy] = useState(false);
 
   useEffect(() => {
     void loadPapers();
@@ -141,6 +148,59 @@ export function StrategyLab({ onOpenAsset, initialSymbol }: { onOpenAsset: (symb
     setNote("Paper bot started. It is below.");
   }
 
+  async function startReview() {
+    if (!series) return;
+    setLiveBusy(true);
+    setNote(null);
+    try {
+      setReview(
+        await reviewLive({
+          templateId: template.id,
+          symbol: series.market.name,
+          resolution: series.resolution,
+          params: { ...paramsFor(template) },
+          allocationUsd: allocation,
+          leverage: liveLeverage,
+        }),
+      );
+      onLive?.();
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : String(error));
+    } finally {
+      setLiveBusy(false);
+    }
+  }
+
+  async function goLive() {
+    if (!review) return;
+    setLiveBusy(true);
+    try {
+      await liveAct(review.id, "enable");
+      setReview(null);
+      setNote("Live. Track it, pause it or stop it under Live strategies below.");
+      onLive?.();
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : String(error));
+    } finally {
+      setLiveBusy(false);
+    }
+  }
+
+  async function discardReview() {
+    if (!review) return;
+    setLiveBusy(true);
+    try {
+      await liveAct(review.id, "remove");
+      setReview(null);
+      setNote("Discarded.");
+      onLive?.();
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : String(error));
+    } finally {
+      setLiveBusy(false);
+    }
+  }
+
   return (
     <View style={styles.wrap}>
       <View style={styles.head}>
@@ -157,14 +217,7 @@ export function StrategyLab({ onOpenAsset, initialSymbol }: { onOpenAsset: (symb
         </View>
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-        {symbols.map((name) => (
-          <Pressable key={name} onPress={() => setSymbol(name)} style={[styles.chip, name === symbol && styles.chipActive]}>
-            <AssetMark symbol={name} size={22} />
-            <Text style={[styles.chipLabel, name === symbol && styles.chipLabelActive]}>{name}</Text>
-          </Pressable>
-        ))}
-      </ScrollView>
+      <MarketPicker symbols={symbols} value={symbol} onChange={setSymbol} />
 
       {error !== null && <Text style={styles.error}>{error}</Text>}
       {series === null && error === null && <Text style={styles.muted}>Loading Hyperliquid history.</Text>}
@@ -271,7 +324,29 @@ export function StrategyLab({ onOpenAsset, initialSymbol }: { onOpenAsset: (symb
                 </Pressable>
               </>
             )}
-            {stage === "live" && <Text style={styles.muted}>Locked for now. It opens after 24 hours on fake money and once real testnet orders are verified.</Text>}
+            {stage === "live" && (
+              <>
+                <Text style={styles.muted}>
+                  Real orders on Hyperliquid {hlNetwork}, sized by the most it can use, up to the leverage below. The server acts when each candle closes and places a stop on the exchange after every entry. Pause or stop it any time below.
+                </Text>
+                <Stepper spec={{ key: "leverage", label: "Leverage", min: 1, max: maxLiveLeverage, step: 1, unit: "x" }} value={liveLeverage} onChange={setLiveLeverage} />
+                {review === null ? (
+                  <Pressable disabled={liveBusy} onPress={startReview} style={({ pressed }) => [styles.primary, { backgroundColor: fill }, (pressed || liveBusy) && styles.pressed]}>
+                    <Text style={styles.primaryLabel}>{liveBusy ? "Checking…" : "Review with a dry run"}</Text>
+                  </Pressable>
+                ) : (
+                  <>
+                    <PreflightView preflight={review.preflight} />
+                    <Pressable disabled={liveBusy || !review.preflight.ready} onPress={goLive} style={({ pressed }) => [styles.primary, { backgroundColor: fill }, (pressed || liveBusy || !review.preflight.ready) && styles.pressed]}>
+                      <Text style={styles.primaryLabel}>{review.preflight.ready ? "Go live" : "Fix the checks above first"}</Text>
+                    </Pressable>
+                    <Pressable disabled={liveBusy} onPress={discardReview} style={styles.tradeLink}>
+                      <Text style={styles.tradeLinkText}>Discard</Text>
+                    </Pressable>
+                  </>
+                )}
+              </>
+            )}
             {note !== null && <Text style={styles.note}>{note}</Text>}
           </View>
         </>

@@ -6,6 +6,7 @@ import { agentExchange, info } from "../lib/hl";
 import { AssetMark } from "../components/AssetMark";
 import { TabBar, tabBarHeight, type TabKey } from "../components/TabBar";
 import { FloorList } from "../components/FloorList";
+import { AlertStrip } from "../components/AlertStrip";
 import { GuardBar } from "../components/GuardBar";
 import { Insights } from "../components/Insights";
 import { ScreenTitle, Switcher, Tag, ToneCard, tone } from "../components/ui";
@@ -113,6 +114,7 @@ export function Trade({ trader, onOpenAsset, onSelectTab }: TradeProps) {
         showsVerticalScrollIndicator={false}
       >
         <GuardBar owner={trader.address} />
+        <AlertStrip trader={trader} />
         <ScreenTitle title="Trade" right={<Tag label="Hyperliquid Testnet" dot={dark.green} />} />
 
         <Switcher

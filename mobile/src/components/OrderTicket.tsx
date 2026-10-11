@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { estimateMarketOrder, liquidationDistancePct, maxOrderNotionalUsd, openBin, sizeBin, slippageWarnBps, type Bin, type Book, type MarketSnapshot, type TradingAccount } from "shared";
 import { guardOrThrow } from "../lib/guardrails";
 import { requestDeposit } from "../lib/nav";
-import { agentExchange } from "../lib/hl";
+import { agentExchange, withFundingHint } from "../lib/hl";
 import { displaySymbol, loadAccountDesk, loadMarketView, type MarketData } from "../lib/market";
 import { dark, family, space, touch, track } from "../theme";
 import { LeverageSlider, riskColor } from "./LeverageSlider";
@@ -127,7 +127,7 @@ export function OrderTicket({ trader, data, symbol, initialDirection, onOpened }
       setAmount("");
       onOpened();
     } catch (error) {
-      setStatus({ text: errorText(error), failed: true });
+      setStatus({ text: withFundingHint(symbol, errorText(error)), failed: true });
     } finally {
       setBusy(false);
     }

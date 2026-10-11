@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Bot, BotMode } from "shared";
 import { HeadlineBox } from "../components/HeadlineBox";
 import { Mark } from "../components/Mark";
+import { LiveBots } from "../components/LiveBots";
 import { PaperBots } from "../components/PaperBots";
 import { StrategyLab } from "../components/StrategyLab";
 import { TabBar, tabBarHeight, type TabKey } from "../components/TabBar";
@@ -39,6 +40,7 @@ export function Bots({ name, labSymbol, onSelectTab, onOpenAsset }: BotsProps) {
   const [mode, setMode] = useState<BotMode>("guard");
   const [hint, setHint] = useState<string | null>(null);
   const [view, setView] = useState<"strategies" | "agent">("strategies");
+  const [liveKey, setLiveKey] = useState(0);
 
   useEffect(() => subscribeBots(setBots), []);
 
@@ -82,8 +84,9 @@ export function Bots({ name, labSymbol, onSelectTab, onOpenAsset }: BotsProps) {
 
         {view === "strategies" && (
           <>
-            <StrategyLab initialSymbol={labSymbol} onOpenAsset={onOpenAsset} />
+            <StrategyLab initialSymbol={labSymbol} onOpenAsset={onOpenAsset} onLive={() => setLiveKey((k) => k + 1)} />
             <PaperBots onOpenAsset={onOpenAsset} />
+            <LiveBots refreshKey={liveKey} onOpenAsset={onOpenAsset} />
           </>
         )}
 

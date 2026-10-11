@@ -19,7 +19,7 @@ import { JsonFileStore } from "../store/jsonFile.js";
 import { startCopySync } from "./apply.js";
 import { copies, strategies } from "./store.js";
 
-const links = new JsonFileStore<VerifiedLink>("data/identity-links.json");
+import { identityLinks as links } from "../identity/links.js";
 
 function parseNet(value: unknown): HlNetwork {
   return value === "mainnet" ? "mainnet" : "testnet";

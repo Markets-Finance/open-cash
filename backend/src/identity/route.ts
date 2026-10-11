@@ -6,7 +6,7 @@ import { JsonFileStore } from "../store/jsonFile.js";
 import { verifyTweetProof } from "./verify.js";
 
 const challenges = new JsonFileStore<LinkChallenge>("data/identity-challenges.json");
-const links = new JsonFileStore<VerifiedLink>("data/identity-links.json");
+import { identityLinks as links } from "./links.js";
 const challengeTtlMs = 15 * 60_000;
 
 export function registerIdentityRoute(app: FastifyInstance): void {

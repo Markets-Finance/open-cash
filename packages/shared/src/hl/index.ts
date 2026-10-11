@@ -1,4 +1,4 @@
-export { createHlExchange, createHlInfo } from "./client.js";
+export { createHlExchange, createHlInfo, exchangeNetwork } from "./client.js";
 export type { HlNetwork, HlWallet } from "./client.js";
 export { listDexes, listMarkets } from "./markets.js";
 export type { HlMarket } from "./markets.js";
@@ -17,6 +17,7 @@ export {
   setLeverage,
 } from "./orders.js";
 export type { HlBuilder, HlMarketKind, HlTif, LimitOrderInput } from "./orders.js";
+export { orderIssue } from "./orders.js";
 export { moveUsd, updateIsolatedMargin, withdrawUsd } from "./transfers.js";
 export {
   chartRanges,
@@ -69,5 +70,18 @@ export type { SignedDeposit } from "./deposit.js";
 export { stockLogoUrl } from "./logos.js";
 export { marketKind, marketSession, weekendGapStats } from "./session.js";
 export type { MarketKind, MarketSession, WeekendGap, WeekendGapStats, WeekendSignal } from "./session.js";
-export { floorDigest, floorId, floorMessage } from "./floorMessages.js";
+export { deleteAccountMessage, floorDigest, floorId, floorMessage } from "./floorMessages.js";
 export type { FloorAction } from "./floorMessages.js";
+export {
+  closeFloorGroup,
+  groupFloors,
+  newGroupId,
+  openFloorBin,
+  previewFloorBin,
+  weekendCloseAt,
+} from "./floorBin.js";
+export type { FloorBinLegPreview, FloorBinPlan, FloorBinPreview } from "./floorBin.js";
+export { checkTrigger, placeTrigger, triggerKindOf, triggerPriceFor } from "./triggers.js";
+export type { TriggerCheck, TriggerInput, TriggerKind } from "./triggers.js";
+export { listTradingKeys, loadBalances, moveFunds, revokeTradingKey, venues } from "./accounts.js";
+export type { Balances, TradingKey, Venue } from "./accounts.js";

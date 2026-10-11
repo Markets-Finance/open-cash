@@ -7,6 +7,7 @@ import { requireTrader } from "../state";
 import { localBotStorage } from "./storage";
 import { publishStrategy } from "../strategies";
 import { guardForBot } from "../guardrails";
+import { initLiveBots, paintLiveBots, startLiveBots } from "../lab/live";
 import { initServerBots, runOnServer, startServerBots } from "./server";
 import { renderBot } from "./view";
 
@@ -33,6 +34,7 @@ async function ensureRuntime(): Promise<BotRuntime> {
 
 export async function startBots() {
   startServerBots();
+  startLiveBots();
   if (await agentReady(requireTrader()).catch(() => false)) await ensureRuntime();
 }
 
@@ -43,11 +45,18 @@ export async function addBotFromCard(card: Bot["card"], mode: BotMode) {
 
 export function initBots() {
   const list = query("[data-bot-list]");
-  initServerBots((error) => {
+  const report = (error: unknown) => {
     const hint = query("[data-bot-hint]");
     hint.dataset.tone = "error";
     hint.textContent = error instanceof Error ? error.message : String(error);
+  };
+  initServerBots(report);
+  initLiveBots(report, (text) => {
+    const hint = query("[data-bot-hint]");
+    hint.dataset.tone = "info";
+    hint.textContent = text;
   });
+  document.addEventListener("live:changed", () => void paintLiveBots());
 
   list.addEventListener("click", async (event) => {
     const root = (event.target as HTMLElement).closest<HTMLElement>("[data-bot]");

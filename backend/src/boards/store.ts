@@ -46,6 +46,12 @@ export async function listBoardsForOwner(owner: Address): Promise<Board[]> {
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 
+export async function deleteBoardsForOwner(owner: Address): Promise<number> {
+  const boards = await listBoardsForOwner(owner);
+  for (const board of boards) await store.delete(board.id);
+  return boards.length;
+}
+
 export async function renameBoard(id: string, name: string): Promise<Board> {
   const board = await store.get(id);
   if (!board) throw new Error(`Unknown board ${id}`);

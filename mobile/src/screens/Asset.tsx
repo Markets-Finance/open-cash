@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { chartRanges, closeBin, marketKind, marketSession, maxOrderNotionalUsd, weekendGapStats, type WeekendGapStats, type Candle, type ChartRangeKey, type DepthSummary, type HlPosition, type MarketSnapshot, type TradingAccount } from "shared";
+import { chartRanges, closeBin, marketKind, marketSession, maxOrderNotionalUsd, weekendGapStats, type WeekendGapStats, type Candle, type ChartRangeKey, type DepthSummary, type HlDesk, type HlPosition, type MarketSnapshot, type TradingAccount } from "shared";
 import { AssetMark } from "../components/AssetMark";
 import { LineChart } from "../components/LineChart";
+import { buildOverlay, type Overlay } from "../lib/overlay";
 import { TabBar, tabBarHeight, type TabKey } from "../components/TabBar";
 import { FloorCard } from "../components/FloorCard";
 import { OrderTicket } from "../components/OrderTicket";
-import { RoundButton, Tag, ToneCard, tone } from "../components/ui";
+import { PositionPanel } from "../components/PositionPanel";
+import { RoundButton, SelectPill, Tag, ToneCard, tone } from "../components/ui";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { agentExchange, info } from "../lib/hl";
 import { displaySymbol, loadAccountDesk, loadCandles, loadMarkets, loadMarketView, type MarketData } from "../lib/market";
 import { dark, family, space, touch } from "../theme";
@@ -55,6 +58,19 @@ export function Asset({ symbol, trader, onBack, onSelectTab, onStrategies }: Ass
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [gaps, setGaps] = useState<WeekendGapStats | null>(null);
+  const [overlay, setOverlay] = useState<Overlay | null>(null);
+  const [mode, setModeState] = useState<"floor" | "pro">("pro");
+  const [ticketSide, setTicketSide] = useState<"long" | "short">("long");
+  const [desk, setDesk] = useState<HlDesk | null>(null);
+
+  useEffect(() => {
+    AsyncStorage.getItem("opencash.ticket.mode.v2").then((saved) => saved === "floor" && setModeState("floor")).catch(() => {});
+  }, []);
+
+  function setMode(next: "floor" | "pro") {
+    setModeState(next);
+    void AsyncStorage.setItem("opencash.ticket.mode.v2", next).catch(() => {});
+  }
   const session = marketSession(symbol);
 
   useEffect(() => {
@@ -72,7 +88,10 @@ export function Asset({ symbol, trader, onBack, onSelectTab, onStrategies }: Ass
 
   function refreshPositions() {
     loadAccountDesk(trader.address, true)
-      .then((desk) => setPositions(desk.positions.filter((p) => p.coin === symbol)))
+      .then((next) => {
+        setDesk(next);
+        setPositions(next.positions.filter((p) => p.coin === symbol));
+      })
       .catch(() => {});
   }
 
@@ -97,7 +116,11 @@ export function Asset({ symbol, trader, onBack, onSelectTab, onStrategies }: Ass
       .then((markets) => {
         if (!live) return;
         setData(markets);
-        loadAccountDesk(trader.address).then((desk) => live && setPositions(desk.positions.filter((p) => p.coin === symbol))).catch(() => {});
+        loadAccountDesk(trader.address).then((next) => {
+          if (!live) return;
+          setDesk(next);
+          setPositions(next.positions.filter((p) => p.coin === symbol));
+        }).catch(() => {});
       })
       .catch((e) => live && setError(e instanceof Error ? e.message : String(e)));
     loadMarketView(symbol, trader.address)
@@ -124,6 +147,15 @@ export function Asset({ symbol, trader, onBack, onSelectTab, onStrategies }: Ass
       live = false;
     };
   }, [data, symbol, range]);
+
+  useEffect(() => {
+    let live = true;
+    setOverlay(null);
+    if (candles && candles.length > 1) buildOverlay(trader.address, symbol, candles).then((next) => live && setOverlay(next)).catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [candles, positions.length, symbol, trader.address]);
 
   const market = data?.markets.get(symbol) ?? null;
     const rangeChange =
@@ -190,8 +222,9 @@ export function Asset({ symbol, trader, onBack, onSelectTab, onStrategies }: Ass
               <Text style={styles.onColorMuted}>No trades in this range yet.</Text>
             </View>
           ) : (
-            <LineChart values={candles.map((c) => c.close)} height={200} color={candles[candles.length - 1].close >= candles[0].open ? dark.green : dark.red} label={(i) => `${stamp(candles[i].time, range)} · ${px(candles[i].close)}`} />
+            <LineChart values={candles.map((c) => c.close)} lines={overlay?.lines} height={200} color={candles[candles.length - 1].close >= candles[0].open ? dark.green : dark.red} label={(i) => `${stamp(candles[i].time, range)} · ${px(candles[i].close)}`} />
           )}
+          {overlay?.legend ? <Text style={styles.muted}>{overlay.legend}</Text> : null}
           <View style={styles.ranges}>
             {rangeKeys.map((key) => (
               <Pressable key={key} onPress={() => setRange(key)} style={[styles.range, range === key && styles.rangeActive]}>
@@ -201,28 +234,27 @@ export function Asset({ symbol, trader, onBack, onSelectTab, onStrategies }: Ass
           </View>
         </ToneCard>
 
-        {data !== null && <OrderTicket trader={trader} data={data} symbol={symbol} onOpened={refreshPositions} />}
-        {market !== null && <FloorCard trader={trader} market={market} onOpened={refreshPositions} />}
+        <View style={styles.tags}>
+          <SelectPill label="Simple" active={mode === "pro"} onPress={() => setMode("pro")} />
+          <SelectPill label="Protected" active={mode === "floor"} onPress={() => setMode("floor")} />
+        </View>
+        {mode === "pro" && data !== null && <OrderTicket key={ticketSide} trader={trader} data={data} symbol={symbol} initialDirection={ticketSide} onOpened={refreshPositions} />}
+        {mode === "floor" && market !== null && <FloorCard trader={trader} market={market} onOpened={refreshPositions} />}
 
-        {positions.map((entry) => {
-          const long = entry.size >= 0;
-          return (
-            <ToneCard key={`${entry.dex}:${entry.coin}`}>
-              <View style={styles.head}>
-                <View style={styles.flex}>
-                  <Text style={styles.sectionTitle}>YOUR {long ? "LONG" : "SHORT"}</Text>
-                  <Text style={styles.muted}>
-                    {Math.abs(entry.size)} {displaySymbol(entry.coin)} · entry {px(entry.entryPx)} · margin {usd(entry.marginUsed)}
-                  </Text>
-                </View>
-                <Text style={[styles.pnl, { color: entry.unrealizedPnl >= 0 ? dark.green : dark.red }]}>{usd(entry.unrealizedPnl)}</Text>
-              </View>
-              <Pressable disabled={busy} onPress={() => void close(entry)} style={({ pressed }) => [styles.manage, pressed && styles.pressed]}>
-                <Text style={styles.manageLabel}>Close position</Text>
-              </Pressable>
-            </ToneCard>
-          );
-        })}
+        {positions.map((entry) => (
+          <PositionPanel
+            key={`${entry.dex}:${entry.coin}`}
+            trader={trader}
+            position={entry}
+            market={market}
+            desk={desk}
+            onChanged={refreshPositions}
+            onAdd={(side) => {
+              setTicketSide(side);
+              setMode("pro");
+            }}
+          />
+        ))}
 
         {gaps !== null && (
           <ToneCard>

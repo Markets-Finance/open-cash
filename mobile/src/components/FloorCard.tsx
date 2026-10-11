@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { maxOrderNotionalUsd, maxSleeveLeverage, previewFloor, type HlMarket, type TradingAccount } from "shared";
+import { marketKind, marketSession, maxOrderNotionalUsd, maxSleeveLeverage, previewFloor, weekendCloseAt, type HlMarket, type TradingAccount } from "shared";
 import { openProtected } from "../lib/floor";
+import { withFundingHint } from "../lib/hl";
 import { displaySymbol } from "../lib/market";
 import { dark, family, space, touch } from "../theme";
 import { ToneCard } from "./ui";
@@ -18,6 +19,10 @@ export function FloorCard({ trader, market, onOpened }: { trader: TradingAccount
   const [floorPct, setFloorPct] = useState(0.8);
   const [leverage, setLeverage] = useState(3);
   const [busy, setBusy] = useState(false);
+  const [timebox, setTimebox] = useState(false);
+  const session = marketSession(market.name);
+  const timeboxable = marketKind(market.name) !== "crypto" && session.tradfiOpen === false && session.nextChangeAt !== null;
+  const reopen = timeboxable ? weekendCloseAt([market.name]) : null;
   const [status, setStatus] = useState<{ text: string; failed: boolean } | null>(null);
 
   const plan = useMemo(() => ({ market, amountUsd: Number(amount) || 0, floorPct, sleeveLeverage: leverage, isLong }), [market, amount, floorPct, leverage, isLong]);
@@ -34,7 +39,7 @@ export function FloorCard({ trader, market, onOpened }: { trader: TradingAccount
     preview?.value == null
       ? null
       : preview.value.notionalUsd < 10
-        ? "The traded position is below the $10 minimum. Raise the amount or the leverage."
+        ? `At ${leverage}x this trades ${usd(preview.value.notionalUsd)}, and the exchange needs at least $10. ${[1, 2, 3, 4, 5].find((l) => preview.value!.sleeveUsd * l >= 10) ? `Use ${[1, 2, 3, 4, 5].find((l) => preview.value!.sleeveUsd * l >= 10)}x, or commit` : "Commit"} at least ${usd(Math.ceil(10.05 / (leverage * (1 - floorPct))))} at ${leverage}x with a ${Math.round(floorPct * 100)}% floor.`
         : preview.value.notionalUsd > maxOrderNotionalUsd
           ? `The traded position is above the ${usd(maxOrderNotionalUsd)} testnet cap. Lower the amount or the leverage.`
           : null;
@@ -44,12 +49,12 @@ export function FloorCard({ trader, market, onOpened }: { trader: TradingAccount
     setBusy(true);
     setStatus({ text: "Waiting for your passkey…", failed: false });
     try {
-      const record = await openProtected(trader, plan, preview.value.floorUsd, preview.value.sleeveUsd);
+      const record = await openProtected(trader, plan, preview.value.floorUsd, preview.value.sleeveUsd, timebox && reopen ? reopen : undefined);
       setStatus({ text: `${isLong ? "Long" : "Short"} ${displaySymbol(market.name)} is open with ${usd(record.floorUsd)} held as the floor.`, failed: false });
       setAmount("");
       onOpened();
     } catch (error) {
-      setStatus({ text: error instanceof Error ? error.message : String(error), failed: true });
+      setStatus({ text: withFundingHint(market.name, error instanceof Error ? error.message : String(error)), failed: true });
     } finally {
       setBusy(false);
     }
@@ -57,7 +62,7 @@ export function FloorCard({ trader, market, onOpened }: { trader: TradingAccount
 
   const rows: [string, string][] = preview?.value
     ? [
-        ["Lent as your floor", usd(preview.value.floorUsd)],
+        ["You can't end below", usd(preview.value.floorUsd)],
         ["Traded", `${usd(preview.value.sleeveUsd)} at ${leverage}x`],
         ["Position size", usd(preview.value.notionalUsd)],
         ["Most you can lose", usd(preview.value.maxLossUsd)],
@@ -94,6 +99,13 @@ export function FloorCard({ trader, market, onOpened }: { trader: TradingAccount
           </Pressable>
         ))}
       </View>
+      {reopen !== null && (
+        <Pressable onPress={() => setTimebox(!timebox)} style={styles.timebox}>
+          <Text style={styles.muted}>
+            {timebox ? "☑" : "☐"} Close automatically when the market reopens ({new Date(reopen).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" })})
+          </Text>
+        </Pressable>
+      )}
       {rows.map(([label, value]) => (
         <View key={label} style={styles.costRow}>
           <Text style={styles.muted}>{label}</Text>
@@ -122,6 +134,7 @@ const styles = StyleSheet.create({
   cur: { fontFamily: family.light, fontSize: 26, color: dark.muted },
   input: { flex: 1, fontFamily: family.regular, fontSize: 18, color: dark.ink, minHeight: touch, paddingHorizontal: space.md, borderRadius: 14, backgroundColor: "#29312e" },
   chips: { flexDirection: "row", gap: space.xs, flexWrap: "wrap" },
+  timebox: { paddingVertical: space.xs },
   chip: { minHeight: 34, paddingHorizontal: space.md, borderRadius: 999, backgroundColor: "#29312e", justifyContent: "center" },
   chipOn: { backgroundColor: dark.accent },
   chipLabel: { fontFamily: family.medium, fontSize: 12, color: dark.ink },

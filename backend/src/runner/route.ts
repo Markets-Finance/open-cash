@@ -13,17 +13,19 @@ import {
   type StrategyCard,
 } from "shared";
 import { agentName, finishAgent, startAgent } from "./agent.js";
-import { startRunner } from "./loop.js";
+import { runnerActive, startRunner } from "./loop.js";
+import { listLive } from "../live/store.js";
+import { botLimitIssue } from "./limits.js";
 import { parseNet } from "./net.js";
+import { preflight } from "./preflight.js";
 import { deleteBot, getBot, listBots, saveBot, type ServerBot } from "./store.js";
 import { hasKey } from "./vault.js";
 
 const windowMs = 60_000;
 const perWindow = 30;
 const hits = new Map<string, { start: number; count: number }>();
-const maxBotsPerOwner = 10;
 
-function limited(ip: string): boolean {
+export function limited(ip: string): boolean {
   const now = Date.now();
   const entry = hits.get(ip);
   if (!entry || now - entry.start > windowMs) {
@@ -48,17 +50,23 @@ function publicBot(bot: ServerBot) {
 }
 
 export function registerBotRoute(app: FastifyInstance): void {
-  let running = false;
-  if (process.env.BOT_RUNNER === "1") void startRunner().then((started) => (running = started));
+  if (process.env.BOT_RUNNER === "1") void startRunner();
 
-  app.get("/bots/status", async () => ({ runner: running, enabledByEnv: process.env.BOT_RUNNER === "1", agentName }));
+  app.get("/bots/status", async () => ({ runner: runnerActive(), enabledByEnv: process.env.BOT_RUNNER === "1", agentName }));
 
   app.get<{ Querystring: { owner?: string; network?: string } }>("/bots", async (request, reply) => {
     const owner = request.query.owner ?? "";
     if (!isAddress(owner)) return reply.status(400).send({ error: "owner must be an address" });
     const net = parseNet(request.query.network);
     if (!net) return reply.status(400).send({ error: "network not enabled for bots" });
-    return { bots: (await listBots({ owner, net })).map(publicBot), hasKey: await hasKey(owner, net), runner: running };
+    return { bots: (await listBots({ owner, net })).map(publicBot), hasKey: await hasKey(owner, net), runner: runnerActive() };
+  });
+
+  app.get<{ Params: { id: string } }>("/bots/:id/preflight", async (request, reply) => {
+    if (limited(request.ip)) return reply.status(429).send({ error: "too many requests" });
+    const bot = await getBot(request.params.id);
+    if (!bot) return reply.status(404).send({ error: "bot not found" });
+    return preflight(bot);
   });
 
   app.post<{ Body: { owner?: string; network?: string } }>("/bots/agent/start", async (request, reply) => {
@@ -92,7 +100,8 @@ export function registerBotRoute(app: FastifyInstance): void {
     if (issues.length > 0) return reply.status(400).send({ error: issues.join(" ") });
     const digest = botDigest(card, mode);
     if (!(await signedBy(owner, botMandateMessage(owner, net, digest, issuedAt), signature))) return reply.status(401).send({ error: "signature does not match the owner" });
-    if ((await listBots({ owner, net })).length >= maxBotsPerOwner) return reply.status(400).send({ error: `At most ${maxBotsPerOwner} bots per wallet` });
+    const limitIssue = await botLimitIssue(owner, net, (await listBots({ owner })).length + (await listLive({ owner })).length);
+    if (limitIssue) return reply.status(400).send({ error: limitIssue });
     const bot: ServerBot = { ...createBot(card.name, mode, card, Date.now()), owner, net, mandate: { digest, signature, issuedAt } };
     await saveBot(bot);
     return publicBot(bot);
@@ -112,6 +121,10 @@ export function registerBotRoute(app: FastifyInstance): void {
       return { ok: true };
     }
     if (action === "enable" && !(await hasKey(bot.owner, bot.net))) return reply.status(400).send({ error: "Approve an agent key for this wallet first" });
+    if (action === "enable") {
+      const clash = (await listLive({ owner: bot.owner, net: bot.net, enabled: true })).find((live) => bot.card.legs.some((leg) => leg.symbol === live.symbol));
+      if (clash) return reply.status(400).send({ error: `${clash.symbol} is already traded by the live bot "${clash.name}"` });
+    }
     const next: ServerBot = { ...bot, enabled: action === "enable", status: action === "enable" ? "watching" : "idle", errorStreak: 0 };
     await saveBot(next);
     return publicBot(next);

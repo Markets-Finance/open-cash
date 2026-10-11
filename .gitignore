@@ -12,3 +12,4 @@ contracts/out/
 contracts/cache/
 contracts/broadcast/
 backend/data/
+.private/

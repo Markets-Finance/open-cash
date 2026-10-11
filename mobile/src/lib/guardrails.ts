@@ -28,7 +28,7 @@ export function loadGuardStatus(owner: string, maxLossUsd: number | null): Promi
 
 export async function guardOrThrow(owner: string, maxLossUsd: number | null): Promise<void> {
   const { verdict } = await loadGuardStatus(owner, maxLossUsd);
-  if (!verdict.allowed) throw new Error(`Guardrail: ${verdict.reason}`);
+  if (!verdict.allowed) throw new Error(`Guardrail: ${verdict.reason}. Your limits are under Account, Loss limits. Tightening is instant, loosening takes 24 hours.`);
 }
 
 export async function guardForBot(_card: unknown, maxLossUsd: number | null): Promise<{ allowed: boolean; reason: string }> {

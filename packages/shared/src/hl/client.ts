@@ -12,6 +12,14 @@ export function createHlInfo(network: HlNetwork = "mainnet"): InfoClient {
   return new InfoClient({ transport: transportFor(network) });
 }
 
+const exchangeNetworks = new WeakMap<object, HlNetwork>();
+
 export function createHlExchange(network: HlNetwork, wallet: HlWallet): ExchangeClient {
-  return new ExchangeClient({ transport: transportFor(network), wallet });
+  const client = new ExchangeClient({ transport: transportFor(network), wallet });
+  exchangeNetworks.set(client, network);
+  return client;
+}
+
+export function exchangeNetwork(client: object): HlNetwork {
+  return exchangeNetworks.get(client) ?? "mainnet";
 }

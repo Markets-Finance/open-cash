@@ -3,7 +3,7 @@ import type { HlNetwork, VerifiedLink } from "shared";
 import { leaderboardView } from "../analytics/leaderboard.js";
 import { JsonFileStore } from "../store/jsonFile.js";
 
-const links = new JsonFileStore<VerifiedLink>("data/identity-links.json");
+import { identityLinks as links } from "../identity/links.js";
 const minEquityUsd = Number(process.env.LEADERBOARD_MIN_EQUITY_USD ?? 10_000);
 
 export function registerLeaderboardRoute(app: FastifyInstance): void {

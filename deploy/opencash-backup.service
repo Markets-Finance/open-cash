@@ -1,0 +1,6 @@
+[Unit]
+Description=OpenCash data backup
+
+[Service]
+Type=oneshot
+ExecStart=/opt/opencash/deploy/backup.sh

@@ -14,8 +14,12 @@ export function GuardBar({ owner }: { owner: string }) {
     let live = true;
     const run = () =>
       loadGuardStatus(owner, null)
-        .then(({ settings, verdict }) => {
+        .then(({ configured, settings, verdict }) => {
           if (!live) return;
+          if (!configured) {
+            setLine(null);
+            return;
+          }
           const locked = verdict.lockedUntil !== null && verdict.lockedUntil > Date.now();
           setLine({
             tone: locked ? "locked" : verdict.remainingTodayUsd < settings.dailyLossLimitUsd * 0.25 ? "warn" : "ok",

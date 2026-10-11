@@ -18,6 +18,10 @@ import { SettingIcon, type SettingIconKind } from "../components/SettingIcon";
 import { TabBar, tabBarHeight, type TabKey } from "../components/TabBar";
 import { createAccount, revealPhrase, signIn } from "../lib/mera";
 import { LimitsPanel } from "../components/LimitsPanel";
+import { DeleteAccountModal } from "../components/DeleteAccountModal";
+import { ImportPanel } from "../components/ImportPanel";
+import { KeysPanel } from "../components/KeysPanel";
+import { MovePanel } from "../components/MovePanel";
 import { XVerify } from "../components/XVerify";
 import { dark, family, space, track } from "../theme";
 
@@ -25,13 +29,13 @@ const profileKey = "opencash.profile";
 
 export type Profile = { name: string; email: string; variant?: number };
 
-type Panel = "profile" | "history" | "wallets" | "phrase" | "network" | "limits" | "x" | null;
+type Panel = "profile" | "history" | "wallets" | "phrase" | "network" | "limits" | "x" | "import" | "move" | "keys" | null;
 
 const failures: Record<string, string> = {
   PRF_UNAVAILABLE:
     "This passkey cannot derive keys. Its authenticator does not support the PRF extension, so it cannot be used for an OpenCash account. Try a passkey stored in iCloud Keychain, Google Password Manager or 1Password.",
   PASSKEY_OPERATION_FAILED:
-    "The passkey prompt was cancelled or unavailable.",
+    "We couldn't find a passkey, or the prompt was closed. New to OpenCash? Choose Create an account.",
   CRYPTO_UNAVAILABLE: "This device is missing a required crypto primitive.",
 };
 
@@ -121,8 +125,12 @@ export function Account({
   const [phrase, setPhrase] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
+  const [importAddress, setImportAddress] = useState("");
+  const [importKey, setImportKey] = useState("");
   const [copied, setCopied] = useState(false);
   const [panel, setPanel] = useState<Panel>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   function explain(error: unknown) {
     setFailed(true);
@@ -243,11 +251,17 @@ export function Account({
       void saveProfile(entered);
       return;
     }
+    const key = importOpen ? importKey.trim() : "";
+    if (importOpen && (key === "" || importAddress.trim() === "")) {
+      setFailed(true);
+      setStatus("Enter the wallet address and its private key, or skip the import.");
+      return;
+    }
     void run(
-      () => createAccount(entered.email, entered.name),
+      () => createAccount(entered.email, entered.name, key === "" ? undefined : { privateKey: key, expectedAddress: importAddress.trim() }),
       "Creating a passkey…",
       entered,
-    );
+    ).finally(() => setImportKey(""));
   }
 
   const showTabBar = account !== null && profile !== null;
@@ -296,6 +310,9 @@ export function Account({
     network: "Network",
     limits: "Loss limits",
     x: "Verified X account",
+    import: "Import a wallet",
+    move: "Move money",
+    keys: "Trading keys",
   };
 
   function closePage() {
@@ -316,6 +333,12 @@ export function Account({
         failed={failed}
         onName={setName}
         onEmail={setEmail}
+        importOpen={importOpen}
+        importAddress={importAddress}
+        importKey={importKey}
+        onImportOpen={account === null ? (open) => { setImportOpen(open); if (open) setFormMode("create"); } : undefined}
+        onImportAddress={setImportAddress}
+        onImportKey={setImportKey}
         onSwitch={account === null ? () => setFormMode(formMode === "create" ? null : "create") : undefined}
         onSubmit={() => (authMode === "signin" ? void run(signIn, "Waiting for your passkey…") : submit())}
       />
@@ -357,7 +380,10 @@ export function Account({
               {phrase === null ? (
                 <>
                   <Text style={styles.note}>
-                    Your 24 words rebuild this account in any wallet. Anyone who has them owns it. Reveal them only where nobody can see your screen.
+                    {account !== null && account.source === "imported"
+                      ? `You are using an imported wallet (${account.address}). These 24 words belong to your passkey account (${account.passkeyAddress}), not to the imported wallet. The imported wallet's recovery is the private key you imported, which this app does not keep in readable form.`
+                      : "Your 24 words rebuild this account in any wallet. Anyone who has them owns it. Reveal them only where nobody can see your screen."}
+                    {" "}Anyone who has the words owns the passkey account. Reveal them only where nobody can see your screen.
                   </Text>
                   <Action label="Reveal with passkey" emphasis="primary" onPress={showPhrase} />
                 </>
@@ -374,6 +400,9 @@ export function Account({
           )}
           {panel === "limits" && account !== null && <LimitsPanel trader={account} />}
           {panel === "x" && account !== null && <XVerify trader={account} />}
+          {panel === "move" && account !== null && <MovePanel trader={account} />}
+          {panel === "keys" && account !== null && <KeysPanel trader={account} />}
+          {panel === "import" && account !== null && <ImportPanel trader={account} onDone={() => void run(signIn, "Signing in with your passkey…")} />}
           {panel === "network" && (
             <View style={styles.card}>
               <Text style={styles.note}>Network</Text>
@@ -392,6 +421,17 @@ export function Account({
 
   return (
     <View style={styles.screen}>
+      {account !== null && (
+        <DeleteAccountModal
+          visible={deleteOpen}
+          trader={account}
+          onClose={() => setDeleteOpen(false)}
+          onDeleted={() => {
+            setDeleteOpen(false);
+            signOut();
+          }}
+        />
+      )}
       {showTabBar && (
         <View style={[styles.header, { paddingTop: insets.top + space.sm }]}>
           <Text style={styles.heading}>Account</Text>
@@ -467,6 +507,9 @@ export function Account({
                   <View style={styles.group}>
                     <Row icon="profile" tint="purple" label="Profile" onPress={() => openPanel("profile")} />
                     <Row icon="wallet" tint="blue" label="Wallets" onPress={() => openPanel("wallets")} />
+                    <Row icon="wallet" tint="lime" label="Move money" onPress={() => openPanel("move")} />
+                    <Row icon="lock" tint="blue" label="Trading keys" onPress={() => openPanel("keys")} />
+                    <Row icon="wallet" tint="lime" label="Import a wallet" onPress={() => openPanel("import")} />
                     <Row icon="history" tint="lime" label="History" onPress={() => openPanel("history")} last />
                   </View>
 
@@ -481,6 +524,11 @@ export function Account({
                   <View style={styles.group}>
                     <Row icon="globe" tint="blue" label="Network" value="Hyperliquid Testnet" onPress={() => openPanel("network")} />
                     <Row icon="exit" tint="peach" label="Sign out" onPress={signOut} last />
+                  </View>
+
+                  <Text style={styles.sectionLabel}>Danger zone</Text>
+                  <View style={styles.group}>
+                    <Row icon="exit" tint="peach" label="Delete my data" onPress={() => setDeleteOpen(true)} last />
                   </View>
                 </>
               )}

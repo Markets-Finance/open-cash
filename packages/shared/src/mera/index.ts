@@ -1,6 +1,11 @@
 export {
+  clearImportedWallet,
   createTradingAccount,
+  importWalletKey,
+  normalizePrivateKey,
+  openImportedKey,
   revealRecoveryPhrase,
+  sealImportedKey,
   signInTradingAccount,
 } from "./account.js";
 export type {

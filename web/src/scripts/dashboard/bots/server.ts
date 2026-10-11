@@ -10,17 +10,17 @@ const refreshMs = 15_000;
 const finishRetries = 5;
 const finishRetryMs = 1_500;
 
-async function call<T>(path: string, init?: RequestInit): Promise<T> {
+export async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${backend}${path}`, init);
   const body = (await response.json()) as T & { error?: string };
   if (!response.ok) throw new Error(body.error ?? `Request failed (${response.status})`);
   return body;
 }
 
-const post = <T>(path: string, body: unknown) =>
+export const post = <T>(path: string, body: unknown) =>
   call<T>(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
 
-async function ensureAgentKey(): Promise<void> {
+export async function ensureAgentKey(): Promise<void> {
   const trader = requireTrader();
   const owner = trader.address;
   const status = await call<{ hasKey: boolean; runner: boolean }>(`/bots?owner=${owner}&network=${hlNetwork}`);

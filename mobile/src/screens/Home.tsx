@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { bins, type HlPosition, type TradingAccount } from "shared";
 import { AddressMark } from "../components/AddressMark";
+import { AlertStrip } from "../components/AlertStrip";
 import { GuardBar } from "../components/GuardBar";
 import { AssetMark } from "../components/AssetMark";
 import { TabBar, tabBarHeight, type TabKey } from "../components/TabBar";
@@ -82,6 +83,7 @@ export function Home({ trader, name, onSelectTab, onOpenAsset, onDeposit, onSend
         </View>
 
         <GuardBar owner={trader.address} />
+        <AlertStrip trader={trader} />
 
         <View style={styles.wallet}>
           <View style={styles.walletFace}>

@@ -1,8 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createHlExchange, createHlInfo, type TradingAccount } from "shared";
+import { createHlExchange, createHlInfo, type HlNetwork, type TradingAccount } from "shared";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
-export const hlNetwork = "testnet";
+export const hlNetwork: HlNetwork = process.env.EXPO_PUBLIC_HL_NETWORK === "mainnet" ? "mainnet" : "testnet";
 export const info = createHlInfo(hlNetwork);
 
 const agentName = "OpenCash";
@@ -31,4 +31,10 @@ export async function agentExchange(trader: TradingAccount): Promise<HlExchange>
     await AsyncStorage.setItem(keyFor(trader.address), key);
   }
   return createHlExchange(hlNetwork, privateKeyToAccount(key));
+}
+
+export function withFundingHint(symbols: string | string[], message: string): string {
+  const list = Array.isArray(symbols) ? symbols : [symbols];
+  if (!list.some((s) => s.includes(":")) || !/margin|perp|insufficient|balance|available/i.test(message)) return message;
+  return `${message} Stocks and commodities trade from their own balance. Open Account, then Move money, to fund it.`;
 }

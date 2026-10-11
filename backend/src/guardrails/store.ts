@@ -35,6 +35,17 @@ export async function getGuardrails(owner: string, network: HlNetwork, now = Dat
   return record;
 }
 
+export async function deleteGuardrails(owner: string): Promise<number> {
+  let removed = 0;
+  for (const network of ["testnet", "mainnet"] as const) {
+    if (await records.get(keyOf(owner, network))) {
+      await records.delete(keyOf(owner, network));
+      removed += 1;
+    }
+  }
+  return removed;
+}
+
 export async function putGuardrails(record: GuardrailRecord): Promise<void> {
   await records.set(keyOf(record.owner, record.network), record);
 }
@@ -49,13 +60,16 @@ export async function guardrailStatus(
   const settings = record?.settings ?? defaultGuardrails;
   const state = record?.state ?? { lockedUntil: null, lastBreachAt: null };
   const loss = await loadGuardrailLoss(createHlInfo(network), owner as `0x${string}`, now);
-  const verdict = evaluateGuardrails({
-    settings,
-    state,
-    loss,
-    now,
-    ...(maxLossUsd === undefined ? {} : { trade: { maxLossUsd } }),
-  });
+  const verdict: GuardrailVerdict =
+    record === null
+      ? { allowed: true, breached: false, lockedUntil: null, reason: "No limits set", lossTodayUsd: loss.lossTodayUsd, remainingTodayUsd: 0 }
+      : evaluateGuardrails({
+          settings,
+          state,
+          loss,
+          now,
+          ...(maxLossUsd === undefined ? {} : { trade: { maxLossUsd } }),
+        });
   if (verdict.breached && record) {
     await putGuardrails({ ...record, state: { lockedUntil: verdict.lockedUntil, lastBreachAt: now } });
   }

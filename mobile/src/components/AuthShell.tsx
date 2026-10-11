@@ -18,6 +18,12 @@ type AuthShellProps = {
   onEmail: (value: string) => void;
   onSwitch?: () => void;
   onSubmit: () => void;
+  importOpen?: boolean;
+  importAddress?: string;
+  importKey?: string;
+  onImportOpen?: (open: boolean) => void;
+  onImportAddress?: (value: string) => void;
+  onImportKey?: (value: string) => void;
 };
 
 const copy: Record<AuthMode, { title: string; hint: string; go: string }> = {
@@ -29,7 +35,7 @@ const copy: Record<AuthMode, { title: string; hint: string; go: string }> = {
 const white = "#ffffff";
 const line = "rgba(255, 255, 255, 0.14)";
 
-export function AuthShell({ mode, dev, name, email, status, failed, onName, onEmail, onSwitch, onSubmit }: AuthShellProps) {
+export function AuthShell({ mode, dev, name, email, status, failed, onName, onEmail, onSwitch, onSubmit, importOpen = false, importAddress = "", importKey = "", onImportOpen, onImportAddress, onImportKey }: AuthShellProps) {
   const insets = useSafeAreaInsets();
   const draw = useRef(new Animated.Value(0)).current;
   const fields = mode !== "signin";
@@ -85,7 +91,29 @@ export function AuthShell({ mode, dev, name, email, status, failed, onName, onEm
                 style={styles.input}
               />
             </View>
+            {mode === "create" && onImportOpen && (
+              <Pressable onPress={() => onImportOpen(!importOpen)} hitSlop={8}>
+                <Text style={styles.switch}>{importOpen ? "− Skip wallet import" : "+ Have a wallet? Import it"}</Text>
+              </Pressable>
+            )}
+            {mode === "create" && importOpen && (
+              <>
+                <View style={styles.field}>
+                  <Text style={styles.label}>Wallet address</Text>
+                  <TextInput value={importAddress} onChangeText={onImportAddress} placeholder="0x…" placeholderTextColor="rgba(255,255,255,0.28)" autoCapitalize="none" autoCorrect={false} style={styles.input} />
+                </View>
+                <View style={styles.field}>
+                  <Text style={styles.label}>Private key</Text>
+                  <TextInput value={importKey} onChangeText={onImportKey} placeholder="0x… (64 hex characters)" placeholderTextColor="rgba(255,255,255,0.28)" secureTextEntry autoCapitalize="none" autoCorrect={false} style={styles.input} />
+                </View>
+              </>
+            )}
           </View>
+        )}
+        {mode === "signin" && onImportOpen && (
+          <Pressable onPress={() => onImportOpen(true)} hitSlop={8}>
+            <Text style={styles.switch}>Have a wallet? Import it</Text>
+          </Pressable>
         )}
         <View style={styles.footer}>
           <Text style={[styles.status, failed && styles.statusFailed]} numberOfLines={3}>

@@ -37,6 +37,9 @@ export type FloorRecord = {
   size: number;
   entryPx: number;
   openedAt: number;
+  groupId?: string;
+  binId?: string;
+  closeAt?: number;
 };
 
 export type FloorStatus = {

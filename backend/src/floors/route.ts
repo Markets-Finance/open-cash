@@ -10,6 +10,18 @@ const store = new JsonFileStore<StoredFloor[]>("data/floors.json");
 const maxFloorsPerOwner = 50;
 const keyOf = (owner: string, network: HlNetwork) => `${network}:${owner.toLowerCase()}`;
 
+export async function deleteFloorsFor(owner: string): Promise<number> {
+  let removed = 0;
+  for (const network of ["testnet", "mainnet"] as const) {
+    const records = await store.get(keyOf(owner, network));
+    if (records) {
+      removed += records.length;
+      await store.delete(keyOf(owner, network));
+    }
+  }
+  return removed;
+}
+
 function parseNet(value: unknown): HlNetwork {
   return value === "mainnet" ? "mainnet" : "testnet";
 }
@@ -23,7 +35,10 @@ function validRecord(record: unknown): record is FloorRecord {
     Number.isInteger(r.assetId) &&
     typeof r.isLong === "boolean" &&
     [r.floorUsd, r.sleeveUsd, r.leverage, r.size, r.entryPx, r.openedAt].every((v) => typeof v === "number" && Number.isFinite(v) && v >= 0) &&
-    Number.isInteger(r.szDecimals)
+    Number.isInteger(r.szDecimals) &&
+    (r.groupId === undefined || (typeof r.groupId === "string" && r.groupId.length <= 80)) &&
+    (r.binId === undefined || (typeof r.binId === "string" && r.binId.length <= 64)) &&
+    (r.closeAt === undefined || (typeof r.closeAt === "number" && Number.isFinite(r.closeAt) && r.closeAt > 0))
   );
 }
 

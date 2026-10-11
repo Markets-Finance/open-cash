@@ -8,9 +8,9 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "xyz.opencash.mobile",
+      "bundleIdentifier": "xyz.opencash.hl",
       "associatedDomains": [
-        "webcredentials:terminal.example.xyz"
+        "webcredentials:hl.opencash.in"
       ]
     },
     "android": {
@@ -21,7 +21,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "xyz.opencash.mobile"
+      "package": "xyz.opencash.hl"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -39,7 +39,8 @@
             "backgroundColor": "#0b0f0e"
           }
         }
-      ]
+      ],
+      "./plugins/withReleaseSigning"
     ]
   }
 }

@@ -92,6 +92,13 @@ import StrategyLab from "./StrategyLab.astro";
         <span class="card__label">Running on the server</span>
         <p class="agent__hint">These keep running while this tab is closed. They trade with a key that can place orders but cannot withdraw.</p>
         <div class="bots__list" data-server-bot-list></div>
+        <span class="card__label">Live strategies</span>
+        <p class="agent__hint">Lab strategies trading real orders on the server. Pause stops new orders and keeps the position and its exchange stop. Stop and close cancels its orders and closes at market.</p>
+        <div class="live__switch">
+          <button type="button" class="btn" data-live-stop-all>Pause all bots</button>
+          <button type="button" class="btn" data-live-close-all>Stop all and close</button>
+        </div>
+        <div class="bots__list" data-live-bot-list></div>
       </section>
     </div>
   </div>

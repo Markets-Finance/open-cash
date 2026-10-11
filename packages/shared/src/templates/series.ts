@@ -28,6 +28,12 @@ const intervals: Record<number, OhlcInterval> = {
   86400: "1d",
 };
 
+export function ohlcIntervalFor(resolution: number): OhlcInterval {
+  const interval = intervals[resolution];
+  if (!interval) throw new Error(`Unsupported resolution ${resolution}s`);
+  return interval;
+}
+
 async function loadCandlesPaged(info: InfoClient, coin: string, interval: OhlcInterval, resolution: number, startTime: number, endTime: number): Promise<Candle[]> {
   const span = resolution * 1000 * maxCandlesPerCall;
   const byTime = new Map<number, Candle>();

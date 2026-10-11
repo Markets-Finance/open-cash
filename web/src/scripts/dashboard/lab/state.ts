@@ -12,6 +12,7 @@ export const labState = {
   series: null as Series | null,
   stage: "simulate" as Stage,
   allocationUsd: 100,
+  liveLeverage: 2,
   params: new Map<templates.TemplateId, templates.Params>(),
 };
 

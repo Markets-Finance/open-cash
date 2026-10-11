@@ -2,217 +2,231 @@
 
 # OpenCash
 
-### Trade everything. Borrow nothing.
+### Trade the news, any hour, with a max loss.
 
-*A spot trading terminal for tokenized stocks on Robinhood Chain — Expo/React Native, Astro, Fastify, and viem, with passkey signing and EIP-7702 agent delegation.*
+*Leverage, themed bins and an AI strategy agent on Hyperliquid — passkey wallet, server-side bots that can trade but never withdraw. Expo, Astro, Fastify, viem.*
 
 ![pnpm workspace](https://img.shields.io/badge/pnpm-workspace-F69220?logo=pnpm&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
-![Chain](https://img.shields.io/badge/Robinhood%20Chain-4663-00C805)
-![Status](https://img.shields.io/badge/status-early%20access-orange)
-
-[Repository](https://github.com/Markets-Finance/Opencash)
+![Venue](https://img.shields.io/badge/venue-Hyperliquid-97FCE4)
+![Status](https://img.shields.io/badge/status-testnet%20verified%2C%20mainnet%20read--only-orange)
 
 </div>
 
 ## What is OpenCash?
 
-Buying a tokenized stock onchain today usually means trading one symbol at a time with no thematic view, or handing funds to an opaque agent and hoping it does the right thing. OpenCash is a spot terminal for Robinhood Chain's Stock Tokens: pool several into a themed **bin** and enter with one signature, trade a single symbol directly, or write a plain-English **mandate** and let SERV Reasoning propose an allocation that still requires your own passkey to execute.
+Markets move on headlines at 3 a.m. on a Sunday, and retail tools give you two bad options: stare at charts all night, or hand leverage to a bot with no ceiling on what it can lose. OpenCash turns a headline or a theme into a **defined-risk position** — a basket of legs with a stop, a target, and a hard cap on how much you can lose in a day — and lets a server-side bot watch it while you sleep.
 
 Three ways in:
 - **Mobile app** (Expo / React Native) — the primary trading surface
-- **Web dashboard** (Astro) — landing page, passkey sign-in, and the same five-tab experience in a browser
-- **MCP server** — `create_mandate`, `propose_action`, `execute`, `start_watch`, `stop_watch`, `get_receipt`, for agent clients that speak MCP
+- **Web dashboard** (Astro) — the same product in a browser, with a landing page and passkey sign-in
+- **HTTP API** (Fastify) — the same engine the apps call: strategies, bots, guardrails, floors, headline translation
 
-> Nothing here is synthetic: every symbol is a real ERC-20 tracking its equity or ETF, every quote is a live call against a Uniswap V3 pool on Robinhood Chain, and every trade — manual or bot-proposed — is signed by your own passkey-derived key. The backend never holds a private key that can move your funds.
+> The differentiator is the loss ceiling, not the leverage. Guardrails are signed by you, loosening them is delayed 24 hours, and the bot key the server holds can trade but cannot withdraw.
 
 ## Features
 
-### Bins
-- **Thematic baskets** — four built-in bins (mega-cap tech, AI compute, consumer platforms, a single-leg NVDA bin), each a weighted set of Stock Tokens
-- **Live per-leg sizing** — every leg is quoted against its deepest Uniswap V3 pool right before you commit, not a cached price
-- **One-signature entry** — an approval plus a batched `multicall` swap across every leg in a single passkey signature
-
 ### Trade
-- **Search & filter** — by symbol or name, across ~195 Stock Tokens fed from Robinhood's own `/rhj` reference-price API
-- **Buy & sell with live quotes** — execution price, expected output, and slippage tolerance shown before you sign
-- **Held vs. all** — filter down to symbols you already hold through an open bin
+- **Perps and spot** — main-book perps, HIP-3 equity/commodity perps (the `xyz` dex) and spot, with limit-first tickets and a leverage slider
+- **Stops and targets** — reduce-only trigger orders per position, validated against liquidation price
+- **Chart trade overlay** — entry, liquidation, target and stop drawn on the chart
+- **Gasless deposit** — USDC permit on Arbitrum submitted by a relayer; withdraw back to your wallet
 
-### Bots (mandates)
-- **Plain-English policy** — write a budget and a rule; no code
-- **SERV-reasoned proposals** — `propose_action` asks SERV Reasoning (prompt-guard + shadow-agent validated) how much USDG to allocate right now, clamped against the mandate's remaining lifetime budget
-- **Manual-approval execution** — every proposal still needs your tap; it signs with your own passkey key, the same code path as a manual bin purchase
-- **Full receipt history** — every proposal and execution outcome, oldest first
+### Bins
+- **Themed baskets** — a bin is a set of legs that move together, opened and closed in one action with per-leg results and rollback if a leg fails
+- **Catalog** — `us-large-cap`, `ai-compute`, `memory-chips`, `metals`, `oil-shock`, `global-indices`, `crypto-majors`, plus weekend bins
+- **Weight modes** — fixed, or allocated from live per-leg inputs (book depth caps each leg)
+- **Custom bins** — build your own from any market list
 
-### Account
-- **Passkey-derived address** — no seed phrase; a WebAuthn PRF extension derives the signing key
-- **Encrypted local profile** — name/email sealed with a key only your passkey can open, stored in `localStorage`
-- **Portable identity card** — the same card component on mobile and web
+### Floor
+- **Upside with a floor underneath** — a barbell of USDC lent on Hyperliquid and an isolated ≤5x perp sleeve; the lent part is never margin for the sleeve
+- **Lifecycle** — open, status, close, re-arm after a knock-out; one floor per market per account
+- **Signed floor store** — floor records are kept server-side, authorised by owner signature
 
-### MCP tools
+### Agent
+- **Headline translator** — paste a headline; an LLM drafts a strategy card from real, liquid markets, and the server re-validates it (market list, shape, risk preview). Nothing trades until you approve
+- **Strategy lab** — strategy cards (legs, weights, leverage, stop, target), previews with risk issues, templates (DCA, Donchian, grid, trail) and a simulator
+- **Agent toolbox** — 7 read-only tools the model can call:
 
-| Tool | Description |
+| Tool | What it does |
 |---|---|
-| `create_mandate` | Persist a plain-English policy bounding how much USDG a SERV agent may allocate into a bin |
-| `propose_action` | Ask SERV Reasoning how much to allocate right now, given the mandate and live pricing |
-| `execute` | Sign a proposal's swaps with the agent's session key and submit on Robinhood Chain |
-| `start_watch` | Re-run `propose_action` for a mandate on an interval |
-| `stop_watch` | Stop a polling loop started by `start_watch` |
-| `get_receipt` | Every proposal/execution outcome recorded for a mandate |
+| `list_markets` | Markets with mark, volume, max leverage |
+| `market_snapshot` | Price, funding and volatility snapshot for a market |
+| `funding_history` | Funding rates over time |
+| `price_stats` | Return and range statistics |
+| `order_book` | Depth and spread |
+| `compare_pair` | Relationship between two markets |
+| `preview_strategy` | Risk preview for a full strategy card |
+
+### Server bots
+- **Guard or auto** — `guard` only watches an open position and closes it at the stop or target; `auto` also opens when entry checks pass, limited by cooldown and opens per day
+- **Signed mandate** — every bot is bound to a SHA-256 digest of its card and mode, signed by the owner. The runner re-verifies the digest and signature before every tick and halts the bot if the card was altered
+- **Trade-only agent key** — the server generates a key, you approve it on Hyperliquid with `approveAgent`, and it is stored AES-256-GCM encrypted. The runner re-checks on each tick that Hyperliquid still lists it, and halts if you revoked it
+- **Guardrails enforced** — daily loss limit, max loss per trade and cool-off apply to every open, from the same signed limits the apps use
+- **Fail safe** — consecutive errors halt a bot; two bots cannot share a market; a lock file keeps a single runner per host
+- **Read-only preflight** — `GET /bots/:id/preflight` runs every check a live tick would run (mandate, agent key, guardrails, entry, sizing, order validation against the notional cap) and reports the exact orders it would send. It sends nothing
+
+### Live strategies
+- **Lab strategies on real orders** — Donchian breakout, DCA, grid and trailing stop run on the server against Hyperliquid, acting when each candle closes (5m to 1d)
+- **Exchange-side stop** — placed after every entry and moved when the strategy moves it; if a stop cannot be placed, the position is closed
+- **Survives restarts** — each processed candle is journaled and the strategy state is rebuilt by replay, so a restart never repeats an entry
+- **Review before going live** — creating a bot runs a dry run that lists the exact orders it would place now; nothing is sent until you press Go live
+- **Metrics from real fills** — net and return, realised, open PnL, fees, fills, volume, orders sent, position, stop and resting orders
+- **Off switches** — per bot: Pause (keeps the position and its stop), Stop and close (cancels orders, closes at market), Remove; for everything: Pause all and Stop all and close, both signed by your passkey
+- **Same limits as server bots** — signed mandate, guardrails on entries, 3 bots per wallet, $10 mainnet balance, one bot per market
+
+### Guardrails, weekends and identity
+- **Guardrails** — signed per-owner limits; loosening takes effect after 24 hours, tightening is immediate
+- **Weekend sessions** — session calendar and gap statistics for HIP-3 markets that trade when equities are closed
+- **Passkey wallet** — the account is derived from a passkey (MERA); optional private-key import sealed by the passkey
+- **Ranks and share** — leaderboard and wallet analytics, X account verification via signed challenge
+- **Analytics** — protocol and wallet views from public Hyperliquid data
+
+## Server execution and the mainnet model
+
+| Layer | Behaviour |
+|---|---|
+| Network gate | Bots run on testnet by default. Mainnet requires `BOT_RUNNER_ALLOW_MAINNET=true` **and** `BOT_RUNNER=1` |
+| Order cap | No mainnet-specific cap. Bots use `BOT_MAX_ORDER_USD` (default 100) per order; exits are split into chunks under it |
+| Entry | IOC limit orders with 1% slippage allowance, leverage set per leg (isolated) |
+| Failed leg | Remaining legs are closed (rollback) and the bot logs the failure |
+| Exit | Stop or target evaluated every 30 s from live position PnL |
+| Builder fee | Optional, set by `BUILDER_ADDRESS` and `BUILDER_FEE_TENTHS_BPS` |
 
 ## Architecture
 
 ```mermaid
 flowchart LR
   subgraph Clients
-    Mobile["Mobile app\nExpo / React Native"]
-    Web["Web dashboard\nAstro"]
+    M[Mobile app]
+    W[Web dashboard]
   end
-
-  subgraph Backend["backend · Fastify"]
-    REST["REST\n/mandates /boards"]
-    SERVClient["SERV client\n(serv/client.ts)"]
-    MCP["MCP server\n6 tools"]
+  subgraph Backend[Fastify backend]
+    R[Routes: strategies, bots, floors, guardrails, agent, analytics]
+    L[Bot runner loop]
+    V[(Encrypted key vault)]
+    S[(JSON stores in data/)]
   end
-
-  Shared["packages/shared\nviem chain config, bin sizing,\nquotes, passkey account"]
-
-  Mobile -- "passkey-signed swaps" --> Uniswap["Uniswap V3\nRobinhood Chain 4663"]
-  Web -- "passkey-signed swaps" --> Uniswap
-  Mobile -- "create / propose mandate" --> REST
-  Web -- "create / propose mandate" --> REST
-  REST --> SERVClient
-  MCP --> SERVClient
-  SERVClient --> ServAPI["SERV Reasoning API\n(or OpenAI in dev testing)"]
-  MCP -. "execute — session key,\nrequires deployed delegate" .-> Delegate["OpenCashDelegate.sol\nEIP-7702, not deployed"]
-
-  Shared -.-> Mobile
-  Shared -.-> Web
-  Shared -.-> Backend
+  SH[packages/shared: hl, bins, bots, agent, guardrails]
+  HL[Hyperliquid API]
+  LLM[OpenAI or NVIDIA NIM]
+  M --> R
+  W --> R
+  R --> SH
+  L --> SH
+  L --> V
+  R --> S
+  SH --> HL
+  R --> LLM
 ```
 
-| Piece | Backed by |
-|---|---|
-| Trade execution (mobile/web) | viem + Uniswap V3 `SwapRouter02`, signed client-side by the user's passkey key |
-| Bin/trade quotes | `QuoterV2`, live, per leg |
-| SERV proposals | SERV Reasoning API, or OpenAI as a dev-only stand-in (see [Setup](#setup)) |
-| Passkey → signing key | `@category-labs/mera`, WebAuthn PRF extension |
-| Backend persistence | flat JSON files (`backend/src/store/jsonFile.ts`) — single-instance MVP storage |
-| Agent delegation | `OpenCashDelegate.sol` (EIP-7702 + WebAuthn), written and tested, **not deployed** |
-
-## Bin catalog
-
-| Bin | Thesis | Legs |
+| Component | Role | Backed by |
 |---|---|---|
-| Mega cap tech | Four Stock Tokens, weighted toward the two with the deepest USDG pools | AAPL 30% · MSFT 30% · NVDA 25% · GOOGL 15% |
-| AI compute | The chip and the two hyperscalers spending the most on it | NVDA 50% · MSFT 30% · GOOGL 20% |
-| Consumer platforms | Three balance sheets that live on ad and subscription revenue | AMZN 50% · META 30% · AAPL 20% |
-| NVDA | A single leg, for a straight view on one Stock Token | NVDA 100% |
+| `packages/shared` | Trading engine: orders, triggers, bins, floor, bot engine, guardrails, agent tools | `@nktkas/hyperliquid`, viem |
+| `backend` | API, headline translation, bot runner, key vault | Fastify, JSON files in `backend/data/` |
+| `web` | Dashboard and landing | Astro, Cloudflare Pages (landing) |
+| `mobile` | Phone app | Expo, React Native |
+| Wallet | Passkey-derived account | `@category-labs/mera`, WebAuthn |
 
-## Robinhood Chain deployment
+## API
 
-| | |
+| Route | Purpose |
 |---|---|
-| Chain ID | `4663` (mainnet) |
-| RPC | `https://rpc.mainnet.chain.robinhood.com` |
-| USDG | `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168` |
-| Uniswap V3 Factory | `0x1f7d7550B1b028f7571E69A784071F0205FD2EfA` |
-| QuoterV2 | `0x33E885ED0EC9BF04ECfB19341582AAdCB4C8A9E7` |
-| SwapRouter02 | `0xCaf681a66D020601342297493863E78c959E5cB2` |
-| Testnet | `46630` — wallet/passkey mechanics only, no USDG, Stock Tokens, or Uniswap deployment |
+| `GET /health` | Liveness |
+| `POST /agent/translate` | Headline → strategy card with preview |
+| `GET/POST /strategies`, `POST /strategies/:id/follow`, `/unfollow` | Shared strategies |
+| `GET /bots`, `GET /bots/status` | Bots for an owner, runner state |
+| `POST /bots/agent/start`, `/bots/agent/finish` | Agent key approval flow |
+| `POST /bots`, `POST /bots/:id/enable`, `/disable`, `/remove` | Signed bot lifecycle |
+| `GET /bots/:id/preflight` | Read-only dry run of a bot's next action |
+| `GET /live`, `POST /live` | Live strategies with metrics; create with a signed mandate |
+| `POST /live/:id/enable`, `/pause`, `/close`, `/remove` | Signed live bot actions |
+| `POST /live/stop-all` | Signed kill switch: pause or close every bot of a wallet |
+| `GET /live/:id/preflight` | Dry run of a live bot: checks plus the orders it would place, nothing sent |
+| `GET/POST /guardrails`, `GET /guardrails/status` | Signed limits and current verdict |
+| `GET/POST /floors`, `POST /floors/:id/remove`, `/replace` | Signed floor store |
+| `GET /boards`, `GET /boards/:id`, `GET /leaderboard` | Market boards and ranks |
+| `GET /analytics/protocol`, `GET /analytics/wallet` | Analytics |
+| `GET /deposit/permit-params` | Gasless deposit parameters |
+| `GET /identity`, `POST /identity/challenge`, `/identity/verify` | X verification |
+| `POST /account/delete` | Delete account data |
 
 ## Project structure
 
 ```
 .
-├── mobile/              # Expo / React Native app — the primary trading surface
-│   └── src/
-│       ├── screens/     # Landing, Bins, Trade, BotHome, Account, ...
-│       ├── components/  # PassCard, TabBar, Mark, ...
-│       └── lib/         # hood.ts, backend.ts, agent.ts, mera.ts
-├── web/                 # Astro landing page, passkey sign-in, dashboard
-│   └── src/
-│       ├── pages/       # index.astro, account.astro, dashboard.astro
-│       ├── scripts/     # hood.ts, backend.ts, chain.ts, mera.ts (vanilla TS)
-│       └── components/  # AccountCard.astro, Mark.astro
-├── backend/             # Fastify API
-│   └── src/
-│       ├── agent/       # mandates, propose (SERV), execute, receipts, watch
-│       ├── boards/      # saved groups of bins
-│       ├── mcp/         # MCP server + 6 tools
-│       └── serv/        # SERV Reasoning / OpenAI client
-├── packages/shared/     # chain config, bin sizing/quotes, passkey account — used by all three
-│   └── src/
-│       ├── hood/        # Robinhood Chain: addresses, ABIs, quoting, registry
-│       ├── bins/        # bin catalog, sizing, execution
-│       ├── mera/         # passkey account derivation
-│       └── perpl/       # legacy Monad-perp code, unused by the hood build
-├── contracts/           # Foundry — OpenCashDelegate.sol (EIP-7702 + WebAuthn), not deployed
-└── docs/                # research and decision notes
+├── backend/            Fastify API, bot runner, key vault, scripts
+│   ├── src/            routes: agent, runner, guardrails, floors, strategies, analytics, deposit, identity
+│   └── scripts/        testnet scripts (hl-floor, hl-bin, hl-bot, ...)
+├── packages/shared/    trading engine shared by backend, web and mobile
+│   └── src/            hl, bins, bots, agent, analysis, strategy, templates, guardrails, mera, identity
+├── web/                Astro dashboard and landing, Cloudflare Pages config
+├── mobile/             Expo app
+├── contracts/          Foundry project from earlier work, not part of the Hyperliquid flow
+└── docs/               research, product plan, trading flow
 ```
 
 ## Setup
 
-```sh
-pnpm install
+1. `pnpm install`
+2. Create `backend/.env` (see the table below)
+3. `pnpm backend` — API on `:8787`
+4. `pnpm web` — dashboard, or `pnpm mobile` / `pnpm android` for the app
 
-# backend — create backend/.env first (see table below)
-pnpm backend      # http://localhost:8787
+| Variable | Purpose |
+|---|---|
+| `PORT` | API port, default 8787 |
+| `OPENAI_API_KEY`, `OPENAI_MODEL` | Headline translator (default model `gpt-5.4-mini`) |
+| `NVIDIA_API_KEY`, `NVIDIA_MODEL` | Translator fallback via NVIDIA NIM |
+| `BOT_RUNNER` | `1` starts the server runner; off otherwise |
+| `BOT_RUNNER_ALLOW_MAINNET` | `true` lets bots be created and run on mainnet |
+| `BOT_KEY_SECRET` | 64 hex chars, encrypts agent keys. Required in production |
+| `BOT_MAX_ORDER_USD` | Per-order notional cap for bots, default 100 |
+| `BUILDER_ADDRESS`, `BUILDER_FEE_TENTHS_BPS` | Optional builder fee |
+| `RELAYER_PRIVATE_KEY`, `RELAYER_ALLOW_MAINNET` | Deposit relayer |
+| `ARBITRUM_RPC_URL`, `ARBITRUM_SEPOLIA_RPC_URL` | Deposit RPCs |
+| `LEADERBOARD_MIN_EQUITY_USD` | Leaderboard filter |
 
-# web
-pnpm web          # http://localhost:4321
+## Kill switch
 
-# mobile
-pnpm mobile       # Expo dev server
-pnpm android      # Expo dev server, --dev-client
+One flag turns the whole app off and leaves the landing page up. With it on, every API route except `/health` answers 404, the bot runner stops acting (open positions and their exchange stops stay), and every web route except the landing page shows the 404 page. Unknown routes always show the same 404 page.
+
+```bash
+SERVER=ubuntu@<server-ip> deploy/kill.sh on      # off | status
 ```
 
-```sh
-cd contracts && forge build && forge test
-```
+The flag is `backend/data/kill-switch` on the server (or `KILL_SWITCH=1` in the env). The website checks it through `/health`, so no redeploy is needed.
 
-| Env var | Required | What |
-|---|---|---|
-| `PORT` | no (default `8787`) | backend HTTP port |
-| `SERV_API_KEY` | for real SERV Reasoning calls | SERV Reasoning API key |
-| `SERV_MODEL` | no | overrides the default SERV model |
-| `SERV_MULTIPATH` | no | `"true"` appends `-serv-multipath` to the model id |
-| `SERV_REASONING_EFFORT` | no (default `"low"`) | SERV `reasoning_effort`; `"off"` omits the field |
-| `OPENAI_API_KEY` | dev-only testing switch | when set, `propose_action` calls OpenAI instead of SERV — same tool-calling shape, without SERV's shadow-agent validation |
-| `OPENAI_MODEL` | no (default `gpt-4o-mini`) | overrides the default OpenAI model |
-| `AGENT_SESSION_KEY` | for the MCP `execute` tool | private key the backend signs session-key swaps with, once a user authorizes it on their own deployed `OpenCashDelegate` |
+## Security and trust
 
-## Security & trust
-
-- **Your funds never touch a backend-held key.** Every manual trade and every mandate execution from the mobile or web app is signed client-side by your passkey-derived key.
-- **Mandates are manual-approval by design.** `propose_action` returns a number and a reason; nothing moves until you tap execute.
-- **`AGENT_SESSION_KEY` currently can't move anyone's funds.** It's the signer for the MCP `execute` tool's session-key path, scoped by `OpenCashDelegate` to specific contract calls — but that contract isn't deployed to mainnet, so the path is inert today.
-- **No P-256 precompile on Robinhood Chain.** `OpenCashDelegate`'s WebAuthn verification falls back to a pure-Solidity implementation rather than assuming RIP-7212 is live.
+- The agent key can trade but cannot withdraw; withdrawals need your wallet signature.
+- Agent keys are encrypted at rest with AES-256-GCM, bound to the owner and network.
+- Every state change (bot, guardrail, floor) is authorised by a fresh owner signature (10-minute window).
+- The runner refuses to trade a bot whose card or mandate signature no longer verifies.
+- Guardrail loosening is delayed 24 hours.
+- Without `BOT_KEY_SECRET` the vault falls back to a local dev secret file. Do not deploy that way.
 
 ## Status
 
-| Claim | Status |
+| Area | State |
 |---|---|
-| Robinhood Chain mainnet addresses (USDG, Factory, QuoterV2, SwapRouter02) | Verified live on-chain |
-| Stock Token buy/sell via `SwapRouter02` | Verified live, mobile + web |
-| Bin entry via `multicall` | Verified live |
-| Passkey sign-in & key derivation | Working, mobile + web |
-| Backend REST (`/mandates`, `/boards`) | Working against a local dev server |
-| SERV Reasoning proposals | Working; currently routed to OpenAI in dev (SERV account balance is near zero) |
-| MCP `execute` / session-key auto-execution | Written, **not usable** — `OpenCashDelegate` isn't deployed |
-| RIP-7212 (P-256 precompile) on Robinhood Chain | Confirmed **not live** |
-| Backend persistence | Flat JSON files — single-instance only, not production storage |
-| Waitlist (`web/functions/waitlist.ts` + D1 migration) | Present in the repo, not exercised this cycle |
-| Web dashboard passkey flow, end-to-end in a real browser | Not verified this cycle — needs a WebAuthn authenticator |
+| Typecheck (`backend`, `packages/shared`) | Passes |
+| Floor, bins, bots on testnet | Run end to end on testnet per `docs/opencash-product-plan.md` |
+| Mainnet | Read-only calls only. No mainnet order has been sent |
+| Mainnet bot path | Gated; preflight and integrity checks are new and not yet exercised against a real saved bot |
+| Live strategies | Engine tested against a simulated exchange (`templates/live.check.ts`); routes, dry runs and off switches tested locally; real orders verified on Hyperliquid testnet (`backend/scripts/hl-live.ts`: entry, exchange stop, stop and close, grid resting orders, pause). Not run on mainnet |
+| Kill switch and 404 | Verified locally with `wrangler pages dev` (switch on and off). Not deployed yet |
+| Deposit relayer | Built, relayer key not configured |
+| Translator | Needs a provider key in `backend/.env` |
+| Persistence | JSON files; fine for one host, not for scale |
+| Contracts | Not part of this flow; status not re-verified |
 
 ## License
 
-No LICENSE file is committed at the repo root. (`mobile/LICENSE` is Expo's own template license for the app scaffolding, not a license for this project.)
-
----
+No license file is committed at the repository root yet.
 
 <div align="center">
 
-Built with [Astro](https://astro.build), [Expo](https://expo.dev) & [React Native](https://reactnative.dev), [Fastify](https://fastify.dev), [viem](https://viem.sh), [Uniswap V3](https://uniswap.org), and SERV Reasoning.
+Built with [Hyperliquid](https://hyperliquid.xyz), [`@nktkas/hyperliquid`](https://github.com/nktkas/hyperliquid), [viem](https://viem.sh), [Fastify](https://fastify.dev), [Astro](https://astro.build) and [Expo](https://expo.dev).
 
 </div>

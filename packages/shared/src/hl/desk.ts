@@ -5,7 +5,7 @@ import type { HlMarketKind } from "./orders.js";
 import { getAccount, type HlPosition } from "./positions.js";
 import { getSpotBalances, listSpotMarkets } from "./spot.js";
 
-export const maxOrderNotionalUsd = 10.5;
+export const maxOrderNotionalUsd = 100;
 export const hlDexes = ["", "xyz"];
 
 export type TradeMarket = {
@@ -97,6 +97,9 @@ export type HlOrder = {
   size: number;
   tif: string | null;
   reduceOnly: boolean;
+  isTrigger: boolean;
+  triggerPx: number;
+  orderType: string;
 };
 
 export type HlFill = {
@@ -138,6 +141,9 @@ export async function loadDesk(info: InfoClient, user: `0x${string}`): Promise<H
       size: Number(o.sz),
       tif: o.tif,
       reduceOnly: o.reduceOnly,
+      isTrigger: o.isTrigger,
+      triggerPx: Number(o.triggerPx),
+      orderType: o.orderType,
     })),
     fills: fills.slice(0, 50).map((f) => ({
       coin: f.coin,

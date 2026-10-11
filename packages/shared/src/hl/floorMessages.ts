@@ -10,26 +10,27 @@ export function floorId(record: Pick<FloorRecord, "coin" | "openedAt">): string 
 }
 
 export function floorDigest(record: FloorRecord): string {
-  return bytesToHex(
-    sha256(
-      utf8.decode(
-        JSON.stringify([
-          record.coin,
-          record.dex,
-          record.assetId,
-          record.isLong,
-          record.floorUsd,
-          record.sleeveUsd,
-          record.leverage,
-          record.size,
-          record.entryPx,
-          record.openedAt,
-        ]),
-      ),
-    ),
-  );
+  const base: unknown[] = [
+    record.coin,
+    record.dex,
+    record.assetId,
+    record.isLong,
+    record.floorUsd,
+    record.sleeveUsd,
+    record.leverage,
+    record.size,
+    record.entryPx,
+    record.openedAt,
+  ];
+  const extended = record.groupId !== undefined || record.binId !== undefined || record.closeAt !== undefined;
+  if (extended) base.push(record.groupId ?? null, record.binId ?? null, record.closeAt ?? null);
+  return bytesToHex(sha256(utf8.decode(JSON.stringify(base))));
 }
 
 export function floorMessage(owner: string, network: string, action: FloorAction, subject: string, issuedAt: number): string {
   return `${action[0].toUpperCase()}${action.slice(1)} floor on OpenCash.\nOwner: ${owner.toLowerCase()}\nNetwork: ${network}\nFloor: ${subject}\nIssued: ${new Date(issuedAt).toISOString()}`;
+}
+
+export function deleteAccountMessage(owner: string, issuedAt: number): string {
+  return `Delete my data on OpenCash.\nOwner: ${owner.toLowerCase()}\nIssued: ${new Date(issuedAt).toISOString()}`;
 }

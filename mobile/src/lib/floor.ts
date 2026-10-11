@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
-  closeFloor,
+  closeFloorGroup,
   floorDigest,
   floorId,
   floorMessage,
@@ -9,8 +9,13 @@ import {
   maxOrderNotionalUsd,
   moveUsd,
   openFloor,
+  openFloorBin,
+  previewFloorBin,
+  weekendCloseAt,
   rearmFloor,
+  type Bin,
   type FloorPlan,
+  type HlMarket,
   type FloorRecord,
   type FloorStatus,
   type TradingAccount,
@@ -75,12 +80,13 @@ async function replaceRecord(trader: TradingAccount, old: FloorRecord, next: Flo
   await signedPost(trader, `/floors/${encodeURIComponent(floorId(old))}/replace`, "replace", `${floorId(old)}>${floorDigest(next)}`, { record: next });
 }
 
-export async function openProtected(trader: TradingAccount, plan: FloorPlan, floorUsd: number, sleeveUsd: number): Promise<FloorRecord> {
+export async function openProtected(trader: TradingAccount, plan: FloorPlan, floorUsd: number, sleeveUsd: number, closeAt?: number): Promise<FloorRecord> {
   await guardOrThrow(trader.address, sleeveUsd);
   const spot = await getSpotBalances(info, trader.address);
   const have = spot.find((b) => b.coin === "USDC")?.available ?? 0;
   if (have < floorUsd) await moveUsd(mainExchange(trader), Math.ceil((floorUsd - have) * 100) / 100, false);
-  const record = await openFloor(await agentExchange(trader), info, trader.address, plan, options);
+  const opened = await openFloor(await agentExchange(trader), info, trader.address, plan, options);
+  const record = closeAt ? { ...opened, closeAt } : opened;
   await addRecord(trader, record);
   return record;
 }
@@ -92,11 +98,25 @@ export async function loadFloorStatuses(trader: TradingAccount): Promise<FloorSt
   return floorStatus(info, trader.address, records, [...markets.values()]);
 }
 
-export async function closeProtected(trader: TradingAccount, status: FloorStatus): Promise<void> {
+export async function closeProtectedGroup(trader: TradingAccount, statuses: FloorStatus[]): Promise<void> {
   const { markets } = await loadMarkets(true);
-  const closed = await closeFloor(await agentExchange(trader), info, trader.address, status.record, [...markets.values()], status.floorValueUsd, options);
-  await removeRecord(trader, status.record);
+  const closed = await closeFloorGroup(await agentExchange(trader), info, trader.address, statuses, [...markets.values()], options);
+  for (const status of statuses) await removeRecord(trader, status.record);
   if (closed.floorWithdrawnUsd > 0) await moveUsd(mainExchange(trader), Math.floor(closed.floorWithdrawnUsd * 100) / 100, true);
+}
+
+export async function openFlooredBin(trader: TradingAccount, bin: Bin, markets: Map<string, HlMarket>, amountUsd: number, floorPct: number, leverage: number, timebox: boolean): Promise<FloorRecord[]> {
+  const closeAt = timebox ? (weekendCloseAt(bin.legs.map((l) => l.symbol)) ?? undefined) : undefined;
+  const plan = { bin, markets, amountUsd, floorPct, sleeveLeverage: leverage, closeAt };
+  const preview = previewFloorBin(plan);
+  if (preview.blocked) throw new Error(preview.blocked);
+  await guardOrThrow(trader.address, preview.sleeveUsd);
+  const spot = await getSpotBalances(info, trader.address);
+  const have = spot.find((b) => b.coin === "USDC")?.available ?? 0;
+  if (have < preview.floorUsd) await moveUsd(mainExchange(trader), Math.ceil((preview.floorUsd - have) * 100) / 100, false);
+  const records = await openFloorBin(await agentExchange(trader), info, trader.address, plan, options);
+  for (const record of records) await addRecord(trader, record);
+  return records;
 }
 
 export async function rearmProtected(trader: TradingAccount, status: FloorStatus): Promise<void> {
@@ -105,5 +125,5 @@ export async function rearmProtected(trader: TradingAccount, status: FloorStatus
   if (!market) throw new Error(`${status.record.coin} is not listed.`);
   const sleeve = status.record.sleeveUsd < status.record.floorUsd ? status.record.sleeveUsd : status.record.floorUsd / 2;
   const next = await rearmFloor(await agentExchange(trader), mainExchange(trader), info, trader.address, status.record, market, sleeve, options);
-  await replaceRecord(trader, status.record, next);
+  await replaceRecord(trader, status.record, status.record.closeAt ? { ...next, closeAt: status.record.closeAt } : next);
 }

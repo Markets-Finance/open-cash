@@ -9,9 +9,10 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { closeBin, hlBinInputSource, maxOrderNotionalUsd, openBin, planBin, weightModes, type Bin, type BinSizingIssue, type SizedBin, type TradingAccount, type WeightMode } from "shared";
+import { closeBin, hlBinInputSource, marketSession, maxOrderNotionalUsd, openBin, planBin, previewFloorBin, weekendCloseAt, weightModes, type Bin, type BinSizingIssue, type SizedBin, type TradingAccount, type WeightMode } from "shared";
+import { openFlooredBin } from "../lib/floor";
 import { guardOrThrow } from "../lib/guardrails";
-import { agentExchange, info } from "../lib/hl";
+import { agentExchange, info, withFundingHint } from "../lib/hl";
 import { SelectPill } from "../components/ui";
 import { AssetMark, LegStack } from "../components/AssetMark";
 import { displaySymbol, loadAccountDesk, type MarketData } from "../lib/market";
@@ -40,6 +41,10 @@ export function BinDetail({ bin, data, balance, trader, onBack }: BinDetailProps
   const [result, setResult] = useState<{ sized: SizedBin; issues: BinSizingIssue[]; usedMode: WeightMode } | null>(null);
 
   const marginAmount = Number(amount) || 0;
+  const [floorPct, setFloorPct] = useState<number | null>(0.8);
+  const [timebox, setTimebox] = useState(false);
+  const reopen = bin.tags?.includes("weekend") ? weekendCloseAt(bin.legs.map((l) => l.symbol)) : null;
+  const floorPreview = floorPct !== null && marginAmount > 0 ? previewFloorBin({ bin, markets: data.markets, amountUsd: marginAmount, floorPct, sleeveLeverage: 3 }) : null;
 
   useEffect(() => {
     if (marginAmount <= 0) {
@@ -57,7 +62,24 @@ export function BinDetail({ bin, data, balance, trader, onBack }: BinDetailProps
     };
   }, [bin, marginAmount, data, mode]);
 
+  async function submitFloored() {
+    if (floorPct === null || marginAmount <= 0) return;
+    setBusy(true);
+    setFailed(false);
+    try {
+      setStatus("Lending the floor and opening every leg…");
+      const records = await openFlooredBin(trader, bin, data.markets, marginAmount, floorPct, 3, timebox && reopen !== null);
+      setStatus(`${bin.name} is open with $${records.reduce((sum, r) => sum + r.floorUsd, 0).toFixed(2)} held as the floor.`);
+    } catch (error) {
+      setFailed(true);
+      setStatus(withFundingHint(bin.legs.map((l) => l.symbol), error instanceof Error ? error.message : String(error)));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function submit() {
+    if (floorPct !== null) return submitFloored();
     if (!result) return;
     setBusy(true);
     setFailed(false);
@@ -91,6 +113,12 @@ export function BinDetail({ bin, data, balance, trader, onBack }: BinDetailProps
       ? "Working…"
       : marginAmount <= 0
       ? "Enter an amount"
+      : floorPct !== null
+        ? floorPreview?.blocked
+          ? floorPreview.blocked
+          : balance !== null && marginAmount > balance
+            ? "Insufficient balance"
+            : null
       : sizing
         ? "Pricing…"
         : !result || result.sized.legs.length === 0
@@ -151,6 +179,24 @@ export function BinDetail({ bin, data, balance, trader, onBack }: BinDetailProps
         </View>
 
         <View style={styles.modes}>
+          {([0.9, 0.8, 0.7] as const).map((value) => (
+            <SelectPill key={value} label={`${Math.round(value * 100)}% floor`} active={floorPct === value} onPress={() => setFloorPct(value)} />
+          ))}
+          <SelectPill label="No floor" active={floorPct === null} onPress={() => setFloorPct(null)} />
+        </View>
+        {floorPct !== null && (
+          <Text style={styles.modeHint}>
+            You can't end below ${floorPreview ? floorPreview.floorUsd.toFixed(2) : "0.00"}. Most you can lose ${floorPreview ? floorPreview.maxLossUsd.toFixed(2) : "0.00"}. The rest is traded at 3x.
+          </Text>
+        )}
+        {floorPct !== null && reopen !== null && (
+          <Pressable onPress={() => setTimebox(!timebox)}>
+            <Text style={styles.modeHint}>
+              {timebox ? "☑" : "☐"} Close automatically when the market reopens ({new Date(reopen).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" })})
+            </Text>
+          </Pressable>
+        )}
+        <View style={styles.modes}>
           {weightModes.map((item) => (
             <SelectPill key={item.key} label={item.label} active={mode === item.key} onPress={() => setMode(item.key)} />
           ))}
@@ -200,7 +246,7 @@ export function BinDetail({ bin, data, balance, trader, onBack }: BinDetailProps
       <View style={[styles.footer, { paddingBottom: insets.bottom + space.md }]}>
         <View style={styles.totals}>
           <Text style={styles.totalLabel}>Total margin</Text>
-          <Text style={styles.totalValue}>${(result?.sized.margin ?? 0).toFixed(2)}</Text>
+          <Text style={styles.totalValue}>${floorPct !== null ? marginAmount.toFixed(2) : (result?.sized.margin ?? 0).toFixed(2)}</Text>
         </View>
         <Pressable
           disabled={blocked !== null}
@@ -220,7 +266,7 @@ export function BinDetail({ bin, data, balance, trader, onBack }: BinDetailProps
                 blocked !== null && styles.primaryLabelDisabled,
               ]}
             >
-              {blocked ?? `Open ${bin.name}`}
+              {blocked ?? (floorPct !== null ? `Open ${bin.name} with a floor` : `Open ${bin.name}`)}
             </Text>
           )}
         </Pressable>

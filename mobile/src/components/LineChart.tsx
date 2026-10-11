@@ -7,17 +7,25 @@ type LineChartProps = {
   height: number;
   color: string;
   label: (index: number) => string;
+  lines?: { price: number; title: string; color: string; dashed?: boolean }[];
 };
 
 const tipWidth = 168;
 
-export function LineChart({ values, height, color, label }: LineChartProps) {
+export function LineChart({ values, height, color, label, lines = [] }: LineChartProps) {
   const [width, setWidth] = useState(0);
   const [active, setActive] = useState<number | null>(null);
-  const min = Math.min(...values);
-  const spread = Math.max(...values) - min || 1;
+  const low = Math.min(...values);
+  const high = Math.max(...values);
+  const reach = (high - low) / 2 + ((high + low) / 2) * 0.05;
+  const shown = lines.filter((l) => Math.abs(l.price - (high + low) / 2) <= reach);
+  const all = [...values, ...shown.map((l) => l.price)];
+  const min = Math.min(...all);
+  const spread = Math.max(...all) - min || 1;
   const xs = values.map((_, i) => (i / (values.length - 1)) * width);
   const ys = values.map((v) => space.sm + (1 - (v - min) / spread) * (height - space.sm * 2));
+
+  const yFor = (price: number) => space.sm + (1 - (price - min) / spread) * (height - space.sm * 2);
 
   function scrub(x: number) {
     if (width === 0) return;
@@ -56,6 +64,14 @@ export function LineChart({ values, height, color, label }: LineChartProps) {
             />
           );
         })}
+      {width > 0 &&
+        shown.map((line) => (
+          <View key={line.title} pointerEvents="none" style={[styles.refLine, { top: yFor(line.price), borderTopColor: line.color, borderStyle: line.dashed ? "dashed" : "solid" }]}>
+            <Text style={[styles.refText, { color: line.color }]} numberOfLines={1}>
+              {line.title}
+            </Text>
+          </View>
+        ))}
       {active !== null && width > 0 && (
         <>
           <View pointerEvents="none" style={[styles.cross, { left: xs[active] }]} />
@@ -79,6 +95,8 @@ export function LineChart({ values, height, color, label }: LineChartProps) {
 }
 
 const styles = StyleSheet.create({
+  refLine: { position: "absolute", left: 0, right: 0, height: 0, borderTopWidth: 1 },
+  refText: { position: "absolute", right: 0, top: -14, fontFamily: family.medium, fontSize: 10 },
   segment: { position: "absolute", height: 2, borderRadius: 1 },
   cross: { position: "absolute", top: 0, bottom: 0, width: 1, backgroundColor: dark.line },
   dot: {

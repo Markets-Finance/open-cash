@@ -35,8 +35,7 @@ export type LimitOrderInput = {
 };
 
 export const minNotionalUsd = 10;
-
-function checkedOrder(input: LimitOrderInput) {
+function checkedOrder(input: LimitOrderInput, cap: number) {
   const size = formatSize(input.size, input.szDecimals);
   if (Number(size) === 0) throw new Error("Order size rounds to zero");
   const price = formatPrice(input.price, input.szDecimals, input.kind);
@@ -44,8 +43,8 @@ function checkedOrder(input: LimitOrderInput) {
   if (notional < minNotionalUsd && !input.reduceOnly) {
     throw new Error(`Order notional ${notional.toFixed(4)} is below the $${minNotionalUsd} minimum`);
   }
-  if (notional > input.maxNotionalUsd) {
-    throw new Error(`Order notional ${notional.toFixed(4)} exceeds cap ${input.maxNotionalUsd}`);
+  if (notional > cap) {
+    throw new Error(`Order notional ${notional.toFixed(4)} exceeds cap ${cap}`);
   }
   return {
     a: input.assetId,
@@ -57,9 +56,18 @@ function checkedOrder(input: LimitOrderInput) {
   };
 }
 
+export function orderIssue(input: LimitOrderInput): string | null {
+  try {
+    checkedOrder(input, input.maxNotionalUsd);
+    return null;
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error);
+  }
+}
+
 export async function placeLimitOrder(exchange: ExchangeClient, input: LimitOrderInput) {
   return exchange.order({
-    orders: [checkedOrder(input)],
+    orders: [checkedOrder(input, input.maxNotionalUsd)],
     grouping: "na",
     ...(input.builder
       ? { builder: { b: input.builder.address, f: input.builder.feeTenthsBps } }
@@ -73,14 +81,14 @@ export async function placeLimitOrders(
   builder?: HlBuilder,
 ) {
   return exchange.order({
-    orders: inputs.map(checkedOrder),
+    orders: inputs.map((input) => checkedOrder(input, input.maxNotionalUsd)),
     grouping: "na",
     ...(builder ? { builder: { b: builder.address, f: builder.feeTenthsBps } } : {}),
   });
 }
 
 export function modifyOrder(exchange: ExchangeClient, orderId: number, input: LimitOrderInput) {
-  return exchange.modify({ oid: orderId, order: checkedOrder(input) });
+  return exchange.modify({ oid: orderId, order: checkedOrder(input, input.maxNotionalUsd) });
 }
 
 export function cancelOrder(exchange: ExchangeClient, assetId: number, orderId: number) {
