@@ -38,6 +38,9 @@
 .nav-links a.active { color: var(--ink); }
 .nav-cta { width: 100%; justify-content: space-between; padding: 15px 14px; border: 1px solid #b7a8ff; border-radius: 10px; font-size: 15px; font-weight: 650; color: #100d19; background: #c4b5fd; box-shadow: 0 4px 22px #9c80ff20; }
 .nav-cta:hover { background: #ded4ff; color: #100d19; }
+.nav-cta.nav-cta--app { margin-top: -12px; background: transparent; color: var(--ink); border-color: var(--line); box-shadow: none; }
+.nav-cta.nav-cta--app:hover { background: var(--surface); color: var(--ink); }
+.nav-app-link { display: none; }
 .hero { height: auto; min-height: 0; padding: 32px 0 64px; text-align: center; display: flex; flex-direction: column; align-items: center; }
 .hero h1 { font-size: clamp(44px, 5.8vw, 88px); line-height: 1.1; max-width: 1104px; }
 .hero > p { max-width: 490px; font-size: 13px; color: var(--muted); }
@@ -290,6 +293,8 @@
   .menu-toggle[aria-expanded=true] span:first-child { transform: translateY(3px) rotate(45deg); }
   .menu-toggle[aria-expanded=true] span:last-child { transform: translateY(-3px) rotate(-45deg); }
   .nav-cta { width: auto; margin: 0 0 0 auto; font-size: 11px; padding: 10px 12px; }
+  .nav-cta.nav-cta--app { display: none; }
+  .nav-links a.nav-app-link { display: block; color: var(--ink); }
   .nav-links { display: none; position: absolute; left: 0; right: 0; top: 63px; padding: 18px; background: var(--paper); border-bottom: 1px solid var(--line); box-shadow: 0 20px 25px #0003; }
   .navigation.menu-open .nav-links { display: flex; }
   .nav-links a { font-size: 18px; padding: 12px 8px; }

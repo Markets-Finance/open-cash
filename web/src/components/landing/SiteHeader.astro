@@ -1,5 +1,5 @@
 ---
-import { navLinks } from "../../data/site";
+import { navLinks, site } from "../../data/site";
 import Mark from "../Mark.astro";
 import LaunchLink from "./LaunchLink.astro";
 ---
@@ -8,9 +8,11 @@ import LaunchLink from "./LaunchLink.astro";
   <nav class="navigation" aria-label="Main navigation">
     <a class="wordmark" href="#home" aria-label="OpenCash home"><Mark />open<span>cash</span></a>
     <LaunchLink class="nav-cta">Launch terminal <span aria-hidden="true">↗</span></LaunchLink>
+    <a class="nav-cta nav-cta--app" href={site.androidApkUrl} download>Download app <span aria-hidden="true">↓</span></a>
     <button class="menu-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu"><span></span><span></span></button>
     <div class="nav-links" id="nav-links">
       {navLinks.map((link, index) => <a href={link.href} class={index === 0 ? "active" : undefined}>{link.label}</a>)}
+      <a class="nav-app-link" href={site.androidApkUrl} download>Download Android app ↓</a>
     </div>
   </nav>
 </header>
