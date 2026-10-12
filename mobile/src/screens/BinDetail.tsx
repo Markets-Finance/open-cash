@@ -24,14 +24,21 @@ type BinDetailProps = {
   balance: number | null;
   trader: TradingAccount;
   onBack: () => void;
+  onOpenAsset: (symbol: string) => void;
 };
 
 const inputSource = hlBinInputSource(info);
 
 const presets = [10, 25, 50, 100];
 
-export function BinDetail({ bin, data, balance: initialBalance, trader, onBack }: BinDetailProps) {
+export function BinDetail({ bin, data, balance: initialBalance, trader, onBack, onOpenAsset }: BinDetailProps) {
   const [balance, setBalance] = useState(initialBalance);
+  const [openedLegs, setOpenedLegs] = useState<string[]>([]);
+  const minMargin = Math.ceil(
+    Math.max(
+      ...bin.legs.map((leg) => 10.05 / ((leg.weightBps / 10000) * Math.min(leg.leverage, data.markets.get(leg.symbol)?.maxLeverage ?? leg.leverage))),
+    ) * 1.15,
+  );
 
   function refreshBalance() {
     loadAccountDesk(trader.address, true)
@@ -98,17 +105,19 @@ export function BinDetail({ bin, data, balance: initialBalance, trader, onBack }
       const exchange = await agentExchange(trader);
       setStatus("Opening every leg…");
       const results = await openBin(exchange, result.sized, data.markets, { maxNotionalUsd: maxOrderNotionalUsd });
-      const failedLegs = results.filter((r) => r.error !== null);
-      const filled = results.filter((r) => r.error === null);
+      const failedLegs = results.filter((r) => r.error !== null || !(r.filledSize > 0));
+      const filled = results.filter((r) => r.error === null && r.filledSize > 0);
       if (failedLegs.length === 0) {
-        setStatus(`${bin.name} is open.`);
+        setStatus(`${bin.name} is open: ${filled.map((r) => displaySymbol(r.symbol)).join(", ")}. Manage each leg below, or from Trade.`);
+        setOpenedLegs(filled.map((r) => r.symbol));
+        setAmount("");
       } else {
         if (filled.length > 0) {
           const open = (await loadAccountDesk(trader.address, true)).positions.filter((p) => filled.some((r) => r.symbol === p.coin));
           await closeBin(exchange, open, data.markets, { maxNotionalUsd: maxOrderNotionalUsd });
         }
         setFailed(true);
-        setStatus(`Not opened: ${failedLegs.map((r) => `${displaySymbol(r.symbol)} ${r.error}`).join(" · ")}. Any leg that filled was closed.`);
+        setStatus(`Not opened: ${failedLegs.map((r) => `${displaySymbol(r.symbol)} ${r.error ?? "did not fill"}`).join(" · ")}. Any leg that filled was closed.`);
       }
     } catch (error) {
       setFailed(true);
@@ -132,8 +141,8 @@ export function BinDetail({ bin, data, balance: initialBalance, trader, onBack }
             : null
       : sizing
         ? "Pricing…"
-        : !result || result.sized.legs.length === 0
-          ? "No leg can be filled at this size"
+        : !result || result.sized.legs.length < bin.legs.length
+          ? `Needs at least $${minMargin} for every leg`
           : balance !== null && marginAmount > balance
             ? "Insufficient balance"
             : null;
@@ -248,6 +257,14 @@ export function BinDetail({ bin, data, balance: initialBalance, trader, onBack }
         {status !== null ? (
           <Text style={[styles.status, failed && styles.statusFailed]}>{status}</Text>
         ) : null}
+
+        {openedLegs.map((symbol) => (
+          <Pressable key={symbol} onPress={() => onOpenAsset(symbol)} style={({ pressed }) => [styles.manageRow, pressed && { opacity: 0.8 }]}>
+            <AssetMark symbol={symbol} size={28} />
+            <Text style={styles.manageText}>{displaySymbol(symbol)}</Text>
+            <Text style={styles.manageCta}>Manage ↗</Text>
+          </Pressable>
+        ))}
 
         <Text style={styles.footnote}>
           Legs fill one at a time on {networkLabel}. If one fails, the legs that filled are closed.
@@ -409,4 +426,7 @@ const styles = StyleSheet.create({
   primaryButtonPressed: { opacity: 0.85 },
   primaryLabel: { fontFamily: family.medium, fontSize: 16, color: dark.onAccent },
   primaryLabelDisabled: { color: dark.muted },
+  manageRow: { flexDirection: "row", alignItems: "center", gap: space.sm, padding: space.md, borderRadius: 16, backgroundColor: dark.surface, borderWidth: 1, borderColor: dark.surfaceLine },
+  manageText: { flex: 1, fontFamily: family.semibold, fontSize: 16, color: dark.ink },
+  manageCta: { fontFamily: family.semibold, fontSize: 14, color: dark.accent },
 });

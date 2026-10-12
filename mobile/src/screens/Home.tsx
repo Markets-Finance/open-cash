@@ -123,6 +123,32 @@ export function Home({ trader, name, onSelectTab, onOpenAsset, onDeposit, onSend
           </View>
         </View>
 
+        <Text style={styles.section}>POSITIONS</Text>
+        {error !== null ? (
+          <Text style={styles.error}>{error}</Text>
+        ) : positions === null ? (
+          <ActivityIndicator color={dark.ink} />
+        ) : positions.length === 0 ? (
+          <Text style={styles.muted}>No open positions yet. Open a bin or place a trade.</Text>
+        ) : (
+          positions.map((position) => (
+            <ToneCard key={`${position.dex}:${position.coin}`}>
+              <View style={styles.cardHead}>
+                <AssetMark symbol={position.coin} size={30} />
+                <View style={styles.headText}>
+                  <Text style={styles.positionName}>{position.size >= 0 ? "LONG" : "SHORT"} {displaySymbol(position.coin).toUpperCase()}</Text>
+                  <Text style={styles.muted}>{position.leverage}x {position.leverageType}</Text>
+                </View>
+                <ArrowBadge label="Open in Trade" onPress={() => onOpenAsset(position.coin)} />
+              </View>
+              <View style={styles.tagRow}>
+                <Tag label={`Value ${usd(position.marginUsed + position.unrealizedPnl)}`} />
+                <Tag label={`PnL ${position.unrealizedPnl >= 0 ? "+" : "−"}${usd(Math.abs(position.unrealizedPnl))}`} dot={position.unrealizedPnl >= 0 ? dark.green : dark.red} />
+              </View>
+            </ToneCard>
+          ))
+        )}
+
         <ToneCard fill={tone.violet}>
           <View style={styles.cardHead}>
             <View style={styles.headText}>
@@ -166,31 +192,6 @@ export function Home({ trader, name, onSelectTab, onOpenAsset, onDeposit, onSend
           </Pressable>
         </View>
 
-        <Text style={styles.section}>POSITIONS</Text>
-        {error !== null ? (
-          <Text style={styles.error}>{error}</Text>
-        ) : positions === null ? (
-          <ActivityIndicator color={dark.ink} />
-        ) : positions.length === 0 ? (
-          <Text style={styles.muted}>No open positions yet. Open a bin or place a trade.</Text>
-        ) : (
-          positions.map((position) => (
-            <ToneCard key={`${position.dex}:${position.coin}`}>
-              <View style={styles.cardHead}>
-                <AssetMark symbol={position.coin} size={30} />
-                <View style={styles.headText}>
-                  <Text style={styles.positionName}>{position.size >= 0 ? "LONG" : "SHORT"} {displaySymbol(position.coin).toUpperCase()}</Text>
-                  <Text style={styles.muted}>{position.leverage}x {position.leverageType}</Text>
-                </View>
-                <ArrowBadge label="Open in Trade" onPress={() => onOpenAsset(position.coin)} />
-              </View>
-              <View style={styles.tagRow}>
-                <Tag label={`Value ${usd(position.marginUsed + position.unrealizedPnl)}`} />
-                <Tag label={`PnL ${position.unrealizedPnl >= 0 ? "+" : "−"}${usd(Math.abs(position.unrealizedPnl))}`} dot={position.unrealizedPnl >= 0 ? dark.green : dark.red} />
-              </View>
-            </ToneCard>
-          ))
-        )}
       </ScrollView>
 
       <TabBar active="home" onSelect={onSelectTab} />

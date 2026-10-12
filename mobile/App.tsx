@@ -195,6 +195,7 @@ export default function App() {
           balance={balance}
           trader={trader}
           onBack={() => setScreen("bins")}
+          onOpenAsset={openAsset}
         />
       ) : null}
       <UpdatePrompt />
