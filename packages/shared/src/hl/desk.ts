@@ -130,7 +130,7 @@ export async function loadDesk(info: InfoClient, user: `0x${string}`): Promise<H
   return {
     equity:
       accounts.reduce((sum, a) => sum + a.equity, 0) +
-      (spot.find((b) => b.coin === "USDC")?.total ?? 0),
+      (spot.find((b) => b.coin === "USDC")?.available ?? 0),
     updatedAt: new Date(),
     positions: accounts.flatMap((a) => a.positions),
     orders: orders.flat().map((o) => ({

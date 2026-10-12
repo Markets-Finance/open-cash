@@ -18,6 +18,18 @@ export async function loadBalances(info: InfoClient, user: `0x${string}`): Promi
   return { perp: perp.withdrawable, xyz: xyz.withdrawable, spot: spot.find((b) => b.coin === "USDC")?.available ?? 0 };
 }
 
+const unifiedModes = ["unifiedAccount", "portfolioMargin"];
+
+export async function isUnified(info: InfoClient, user: `0x${string}`): Promise<boolean> {
+  return unifiedModes.includes(await info.userAbstraction({ user }));
+}
+
+export async function enableUnified(exchange: ExchangeClient, info: InfoClient, user: `0x${string}`): Promise<boolean> {
+  if (await isUnified(info, user)) return false;
+  await exchange.userSetAbstraction({ user, abstraction: "unifiedAccount" });
+  return true;
+}
+
 export async function moveFunds(exchange: ExchangeClient, user: `0x${string}`, amountUsd: number, from: Venue, to: Venue) {
   if (from === to) throw new Error("Pick two different balances.");
   if (!(amountUsd > 0)) throw new Error("Enter an amount.");

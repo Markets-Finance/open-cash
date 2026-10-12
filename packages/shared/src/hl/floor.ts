@@ -2,6 +2,7 @@ import type { ExchangeClient, InfoClient } from "@nktkas/hyperliquid";
 import type { HlMarket } from "./markets.js";
 import { formatSize, minNotionalUsd, placeLimitOrder, setLeverage, type HlBuilder } from "./orders.js";
 import { getAccount } from "./positions.js";
+import { isUnified } from "./accounts.js";
 import { getSpotBalances } from "./spot.js";
 import { moveUsd } from "./transfers.js";
 
@@ -138,15 +139,19 @@ export async function openFloor(
   options: FloorOrderOptions,
 ): Promise<FloorRecord> {
   const preview = previewFloor(plan);
-  const [spot, perp] = await Promise.all([
+  const [spot, perp, unified] = await Promise.all([
     getSpotBalances(info, user),
     getAccount(info, user, plan.market.dex),
+    isUnified(info, user),
   ]);
   const spotUsdc = spot.find((b) => b.coin === "USDC")?.available ?? 0;
-  if (spotUsdc < preview.floorUsd) {
+  if (unified && spotUsdc < preview.floorUsd + preview.sleeveUsd) {
+    throw new Error(`Floor needs $${(preview.floorUsd + preview.sleeveUsd).toFixed(2)} USDC; $${spotUsdc.toFixed(2)} available`);
+  }
+  if (!unified && spotUsdc < preview.floorUsd) {
     throw new Error(`Floor needs $${preview.floorUsd.toFixed(2)} USDC in spot; $${spotUsdc.toFixed(2)} available`);
   }
-  if (perp.withdrawable < preview.sleeveUsd) {
+  if (!unified && perp.withdrawable < preview.sleeveUsd) {
     throw new Error(`Sleeve needs $${preview.sleeveUsd.toFixed(2)} in perp; $${perp.withdrawable.toFixed(2)} available`);
   }
   if (perp.positions.some((p) => p.coin === plan.market.name)) {

@@ -83,5 +83,5 @@ export {
 export type { FloorBinLegPreview, FloorBinPlan, FloorBinPreview } from "./floorBin.js";
 export { checkTrigger, placeTrigger, triggerKindOf, triggerPriceFor } from "./triggers.js";
 export type { TriggerCheck, TriggerInput, TriggerKind } from "./triggers.js";
-export { listTradingKeys, loadBalances, moveFunds, revokeTradingKey, venues } from "./accounts.js";
+export { enableUnified, isUnified, listTradingKeys, loadBalances, moveFunds, revokeTradingKey, venues } from "./accounts.js";
 export type { Balances, TradingKey, Venue } from "./accounts.js";

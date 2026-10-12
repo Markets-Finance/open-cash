@@ -11,12 +11,12 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { addressForKey, isDevAuth, type TradingAccount } from "shared";
+import { addressForKey, isDevAuth, isUnified, type TradingAccount } from "shared";
 import { PassCard } from "../components/PassCard";
 import { AuthShell, type AuthMode } from "../components/AuthShell";
 import { SettingIcon, type SettingIconKind } from "../components/SettingIcon";
 import { TabBar, tabBarHeight, type TabKey } from "../components/TabBar";
-import { hlNetwork, networkLabel } from "../lib/hl";
+import { hlNetwork, info, networkLabel } from "../lib/hl";
 import { createAccount, endSession, resumeSession, revealPhrase, signIn } from "../lib/mera";
 import { setBackOverride } from "../lib/nav";
 import { LimitsPanel } from "../components/LimitsPanel";
@@ -133,6 +133,12 @@ export function Account({
   const [panel, setPanel] = useState<Panel>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [missing, setMissing] = useState(false);
+  const [unified, setUnified] = useState(false);
+
+  useEffect(() => {
+    if (account === null) return;
+    isUnified(info, account.address).then(setUnified).catch(() => setUnified(false));
+  }, [account, panel]);
 
   function explain(error: unknown) {
     setFailed(true);
@@ -543,7 +549,7 @@ export function Account({
                   <View style={styles.group}>
                     <Row icon="profile" tint="purple" label="Profile" onPress={() => openPanel("profile")} />
                     <Row icon="wallet" tint="blue" label="Wallets" onPress={() => openPanel("wallets")} />
-                    <Row icon="wallet" tint="lime" label="Move money" onPress={() => openPanel("move")} />
+                    {!unified && <Row icon="wallet" tint="lime" label="Move money" onPress={() => openPanel("move")} />}
                     <Row icon="lock" tint="blue" label="Trading keys" onPress={() => openPanel("keys")} />
                     <Row icon="wallet" tint="lime" label="Import a wallet" onPress={() => openPanel("import")} />
                     <Row icon="history" tint="lime" label="History" onPress={() => openPanel("history")} last />

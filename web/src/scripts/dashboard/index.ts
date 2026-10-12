@@ -1,4 +1,8 @@
+import { enableUnified, isUnified } from "shared";
+import { info } from "../hl";
+import { mainExchange } from "../hlSession";
 import { initAccount } from "./account";
+import { requireTrader } from "./state";
 import { initAgent } from "./agent";
 import { initAnalytics } from "./analytics";
 import { initBins } from "./bins";
@@ -31,7 +35,15 @@ document.addEventListener("click", (event) => {
   if (target?.dataset.openAsset) openAsset(target.dataset.openAsset);
 });
 initBots();
+async function unify() {
+  const trader = requireTrader();
+  if (await enableUnified(mainExchange(trader), info, trader.address)) document.dispatchEvent(new CustomEvent("balance:changed"));
+  const unified = await isUnified(info, trader.address);
+  document.querySelectorAll<HTMLElement>("[data-open-move]").forEach((el) => (el.hidden = unified));
+}
+
 initGate(() => {
+  void unify().catch(() => {});
   void initHome();
   startGuardBar();
   startAlerts();

@@ -10,7 +10,7 @@ export async function balanceUsd(owner: string, net: HlNetwork): Promise<number>
     Promise.all(hlDexes.map((dex) => getAccount(info, user, dex))),
     getSpotBalances(info, user),
   ]);
-  return accounts.reduce((sum, account) => sum + account.equity, 0) + (spot.find((b) => b.coin === "USDC")?.total ?? 0);
+  return accounts.reduce((sum, account) => sum + account.equity, 0) + (spot.find((b) => b.coin === "USDC")?.available ?? 0);
 }
 
 export async function botLimitIssue(owner: string, net: HlNetwork, existing: number): Promise<string | null> {

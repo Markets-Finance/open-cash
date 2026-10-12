@@ -10,7 +10,8 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import { AppState, BackHandler, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import type { Bin, TradingAccount } from "shared";
+import { enableUnified, type Bin, type TradingAccount } from "shared";
+import { info, mainExchange } from "./src/lib/hl";
 import { Account, type Profile } from "./src/screens/Account";
 import { BinDetail } from "./src/screens/BinDetail";
 import { Bins } from "./src/screens/Bins";
@@ -104,7 +105,10 @@ export default function App() {
   function onAuthenticated(account: TradingAccount | null) {
     setTrader(account);
     if (account === null) stopBots();
-    else void startBots(account);
+    else {
+      void startBots(account);
+      void enableUnified(mainExchange(account), info, account.address).catch(() => {});
+    }
     setBalance(null);
     setPortfolio(null);
     if (account === null) return;
