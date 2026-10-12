@@ -9,7 +9,9 @@
 ![pnpm workspace](https://img.shields.io/badge/pnpm-workspace-F69220?logo=pnpm&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![Venue](https://img.shields.io/badge/venue-Hyperliquid-97FCE4)
-![Status](https://img.shields.io/badge/status-testnet%20verified%2C%20mainnet%20read--only-orange)
+![Status](https://img.shields.io/badge/status-live%20on%20mainnet-2ea44f)
+
+[Landing page](https://hl.opencash.in) · [Pitch deck](https://claude.ai/artifact/BB4iT3CtLw9m4zhhCoG48b) · [Android app](https://opencash-hl-downloads.s3.ap-southeast-2.amazonaws.com/opencash.apk)
 
 </div>
 
