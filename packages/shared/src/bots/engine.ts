@@ -18,6 +18,7 @@ export type BotDeps = {
   signalGate?: (card: StrategyCard) => Promise<{ ok: boolean; reason: string }>;
   open: (card: StrategyCard) => Promise<{ txHash?: string }>;
   close: (card: StrategyCard) => Promise<{ txHash?: string }>;
+  protect?: (card: StrategyCard) => Promise<string[]>;
 };
 
 export type StopReason = "stop" | "target";
@@ -57,6 +58,14 @@ export async function tickBot(input: Bot, deps: BotDeps): Promise<Bot> {
     const held = await deps.heldLegs(bot.card);
 
     if (held.length > 0) {
+      if (deps.protect) {
+        try {
+          const placed = await deps.protect(bot.card);
+          if (placed.length > 0) bot = withLog(bot, "action", `Exchange stop placed: ${placed.join(", ")}`, now);
+        } catch (error) {
+          bot = withLog(bot, "error", `Could not place an exchange stop: ${message(error)}`, now);
+        }
+      }
       const reason = exitReason(bot.card, held);
       if (reason === null) {
         const pnl = held.reduce((sum, leg) => sum + leg.pnlUsd, 0);
@@ -107,7 +116,16 @@ export async function tickBot(input: Bot, deps: BotDeps): Promise<Bot> {
     }
 
     const { txHash } = await deps.open(bot.card);
-    bot = withLog(bot, "action", `Opened ${bot.card.name}. ${check.reason}`, now, txHash);
+    let placed: string[] = [];
+    if (deps.protect) {
+      try {
+        placed = await deps.protect(bot.card);
+      } catch (error) {
+        await deps.close(bot.card);
+        throw new Error(`Opened, then closed because the exchange stop could not be placed: ${message(error)}`);
+      }
+    }
+    bot = withLog(bot, "action", `Opened ${bot.card.name}. ${check.reason}${placed.length > 0 ? `. Exchange stop placed: ${placed.join(", ")}` : ""}`, now, txHash);
     return {
       ...bot,
       status: "open",

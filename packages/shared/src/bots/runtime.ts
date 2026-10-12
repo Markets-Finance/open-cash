@@ -5,6 +5,7 @@ import { hlBinInputSource } from "../bins/inputs.js";
 import { planBin } from "../bins/plan.js";
 import type { HlBuilder } from "../hl/orders.js";
 import { getAccount, type HlPosition } from "../hl/positions.js";
+import { placeTrigger, triggerKindOf, triggerPriceFor, type TriggerKind } from "../hl/triggers.js";
 import { binFromCard } from "../strategy/convert.js";
 import type { StrategyCard } from "../strategy/types.js";
 import { checkEntry } from "./entry.js";
@@ -83,6 +84,32 @@ export function createHlBotDeps(config: HlBotDepsConfig): BotDeps {
         throw new Error(`Rolled back: ${failed.map((r) => `${r.symbol} (${r.error ?? "not filled"})`).join(", ")}`);
       }
       return {};
+    },
+    protect: async (card) => {
+      const held = await positionsFor(config, card);
+      if (held.length === 0) return [];
+      const markets = await marketMap();
+      const dexes = [...new Set(held.map((p) => p.dex))];
+      const orders = (await Promise.all(dexes.map((dex) => config.info.frontendOpenOrders(dex ? { user: config.user, dex } : { user: config.user })))).flat();
+      const placed: string[] = [];
+      for (const position of held) {
+        const market = markets.get(position.coin);
+        if (!market) throw new Error(`${position.coin} is not listed`);
+        const existing = orders
+          .filter((o) => o.coin === position.coin && o.isTrigger && o.reduceOnly)
+          .map((o) => triggerKindOf({ isTrigger: o.isTrigger, orderType: o.orderType }));
+        const isLong = position.size > 0;
+        const leverage = position.leverage > 0 ? position.leverage : (card.legs.find((leg) => leg.symbol === position.coin)?.leverage ?? 1);
+        const wanted: [TriggerKind, number][] = [["sl", card.stopLossPct]];
+        if (card.legs.length === 1 && card.takeProfitPct !== undefined) wanted.push(["tp", card.takeProfitPct]);
+        for (const [kind, pct] of wanted) {
+          if (existing.includes(kind)) continue;
+          const triggerPx = triggerPriceFor(position.entryPx, isLong, kind, pct / leverage);
+          await placeTrigger(config.exchange, { assetId: market.assetId, szDecimals: market.szDecimals, position, markPx: market.markPx, kind, triggerPx, maxNotionalUsd: config.maxNotionalUsd });
+          placed.push(`${kind === "sl" ? "stop" : "target"} ${position.coin.split(":").pop()} at ${Number(triggerPx.toPrecision(5))}`);
+        }
+      }
+      return placed;
     },
     close: async (card) => {
       const markets = await marketMap();
