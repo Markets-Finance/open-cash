@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import { groupByBins, type BinGroup } from "shared";
+import { BinGroupCard } from "../components/BinGroupCard";
+import { loadBinRecords, removeBinRecords } from "../lib/binRecords";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { bins, type HlPosition, type TradingAccount } from "shared";
@@ -42,6 +45,8 @@ export function Home({ trader, name, onSelectTab, onOpenAsset, onDeposit, onSend
   const insets = useSafeAreaInsets();
   const [summary, setSummary] = useState<Awaited<ReturnType<typeof loadSummary>> | null>(null);
   const [positions, setPositions] = useState<HlPosition[] | null>(null);
+  const [groups, setGroups] = useState<BinGroup[]>([]);
+  const [reload, setReload] = useState(0);
   const [data, setData] = useState<MarketData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,12 +58,18 @@ export function Home({ trader, name, onSelectTab, onOpenAsset, onDeposit, onSend
         loadSummary(trader).then((next) => live && setSummary(next)).catch(() => live && setSummary(null));
         return loadAccountDesk(trader.address, true);
       })
-      .then((desk) => live && setPositions(desk.positions))
+      .then(async (desk) => {
+        const grouped = groupByBins(desk.positions, await loadBinRecords(trader.address));
+        void removeBinRecords(trader.address, grouped.stale);
+        if (!live) return;
+        setGroups(grouped.groups);
+        setPositions(grouped.loose);
+      })
       .catch((cause) => live && setError(String(cause)));
     return () => {
       live = false;
     };
-  }, [trader.address]);
+  }, [trader.address, reload]);
 
   const listed = data ? featuredSymbols.filter((symbol) => data.markets.has(symbol)) : featuredSymbols;
   const pnl = summary?.unrealizedPnl ?? 0;
@@ -128,10 +139,14 @@ export function Home({ trader, name, onSelectTab, onOpenAsset, onDeposit, onSend
           <Text style={styles.error}>{error}</Text>
         ) : positions === null ? (
           <ActivityIndicator color={dark.ink} />
-        ) : positions.length === 0 ? (
+        ) : positions.length === 0 && groups.length === 0 ? (
           <Text style={styles.muted}>No open positions yet. Open a bin or place a trade.</Text>
         ) : (
-          positions.map((position) => (
+          [
+            ...groups.map((group) => (
+              <BinGroupCard key={group.record.id} group={group} trader={trader} data={data} onOpenAsset={onOpenAsset} onChanged={() => setReload((n) => n + 1)} />
+            )),
+            ...positions.map((position) => (
             <ToneCard key={`${position.dex}:${position.coin}`}>
               <View style={styles.cardHead}>
                 <AssetMark symbol={position.coin} size={30} />
@@ -146,7 +161,8 @@ export function Home({ trader, name, onSelectTab, onOpenAsset, onDeposit, onSend
                 <Tag label={`PnL ${position.unrealizedPnl >= 0 ? "+" : "−"}${usd(Math.abs(position.unrealizedPnl))}`} dot={position.unrealizedPnl >= 0 ? dark.green : dark.red} />
               </View>
             </ToneCard>
-          ))
+            )),
+          ]
         )}
 
         <ToneCard fill={tone.violet}>

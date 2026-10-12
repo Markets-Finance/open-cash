@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { groupByBins, type BinGroup } from "shared";
+import { BinGroupCard } from "../components/BinGroupCard";
+import { loadBinRecords, removeBinRecords } from "../lib/binRecords";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { closeBin, liquidityGrade, loadDeepBook, maxOrderNotionalUsd, slippageBps, type HlPosition, type LiquidityGrade, type TradingAccount } from "shared";
@@ -37,6 +40,7 @@ export function Trade({ trader, onOpenAsset, onSelectTab }: TradeProps) {
   const [data, setData] = useState<MarketData | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [positions, setPositions] = useState<HlPosition[] | null>(null);
+  const [groups, setGroups] = useState<BinGroup[]>([]);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -45,7 +49,12 @@ export function Trade({ trader, onOpenAsset, onSelectTab }: TradeProps) {
 
   const refreshPositions = useCallback(() => {
     loadAccountDesk(trader.address, true)
-      .then((desk) => setPositions(desk.positions))
+      .then(async (desk) => {
+        const grouped = groupByBins(desk.positions, await loadBinRecords(trader.address));
+        void removeBinRecords(trader.address, grouped.stale);
+        setGroups(grouped.groups);
+        setPositions(grouped.loose);
+      })
       .catch(() => setPositions([]));
   }, [trader.address]);
 
@@ -121,10 +130,14 @@ export function Trade({ trader, onOpenAsset, onSelectTab }: TradeProps) {
         {status !== null && <Text style={styles.muted}>{status}</Text>}
         {positions === null ? (
           <ActivityIndicator color={dark.ink} />
-        ) : positions.length === 0 ? (
+        ) : positions.length === 0 && groups.length === 0 ? (
           <Text style={styles.muted}>No open positions on {networkLabel} for this address.</Text>
         ) : (
-          positions.map((entry) => {
+          [
+            ...groups.map((group) => (
+              <BinGroupCard key={group.record.id} group={group} trader={trader} data={data} onOpenAsset={onOpenAsset} onChanged={refreshPositions} />
+            )),
+            ...positions.map((entry) => {
             const long = entry.size >= 0;
             return (
               <ToneCard key={`${entry.dex}:${entry.coin}`}>
@@ -145,7 +158,8 @@ export function Trade({ trader, onOpenAsset, onSelectTab }: TradeProps) {
                 </Pressable>
               </ToneCard>
             );
-          })
+            }),
+          ]
         )}
 
         <Switcher

@@ -12,3 +12,5 @@ export type { BinInputSource } from "./inputs.js";
 export { customBin } from "./custom.js";
 export { planBin, withoutLegs } from "./plan.js";
 export type { BinPlan } from "./plan.js";
+export { groupByBins } from "./records.js";
+export type { BinGroup, BinRecord } from "./records.js";

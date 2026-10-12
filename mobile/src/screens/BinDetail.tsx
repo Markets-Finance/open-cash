@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { closeBin, hlBinInputSource, marketSession, maxOrderNotionalUsd, openBin, planBin, previewFloorBin, weekendCloseAt, weightModes, type Bin, type BinSizingIssue, type SizedBin, type TradingAccount, type WeightMode } from "shared";
+import { addBinRecord } from "../lib/binRecords";
 import { openFlooredBin } from "../lib/floor";
 import { guardOrThrow } from "../lib/guardrails";
 import { agentExchange, info, networkLabel, withFundingHint } from "../lib/hl";
@@ -108,6 +109,14 @@ export function BinDetail({ bin, data, balance: initialBalance, trader, onBack, 
       const failedLegs = results.filter((r) => r.error !== null || !(r.filledSize > 0));
       const filled = results.filter((r) => r.error === null && r.filledSize > 0);
       if (failedLegs.length === 0) {
+        const openedAt = Date.now();
+        await addBinRecord(trader.address, {
+          id: `${bin.id}-${openedAt}`,
+          binId: bin.id,
+          name: bin.name,
+          openedAt,
+          legs: filled.map((r) => ({ symbol: r.symbol, direction: result.sized.legs.find((l) => l.leg.symbol === r.symbol)?.leg.direction ?? "long", size: r.filledSize })),
+        });
         setStatus(`${bin.name} is open: ${filled.map((r) => displaySymbol(r.symbol)).join(", ")}. Manage each leg below, or from Trade.`);
         setOpenedLegs(filled.map((r) => r.symbol));
         setAmount("");
