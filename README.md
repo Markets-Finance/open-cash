@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="web/public/favicon.svg" alt="OpenCash logo" width="88">
+
 # OpenCash
 
 ### Trade the news, any hour, with a max loss.
