@@ -26,5 +26,5 @@ cp "$root/mobile/android/app/build/outputs/apk/release/app-release.apk" "$apk"
 
 gh release create "v$version" "$apk" --repo "$repo" --title "OpenCash $version" --notes "$notes"
 aws s3 cp "$apk" s3://opencash-hl-downloads/opencash.apk --region ap-southeast-2 \
-  --content-type application/vnd.android.package-archive --content-disposition 'attachment; filename="OpenCash.apk"'
+  --content-type application/vnd.android.package-archive --content-disposition 'attachment; filename="OpenCash.apk"' --cache-control no-cache
 echo "released v$version (versionCode $code)"
