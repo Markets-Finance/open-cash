@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { Animated, Easing, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Animated, Easing, Keyboard, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { family, space } from "../theme";
 import { AnimatedMark } from "./AnimatedMark";
@@ -40,14 +40,24 @@ export function AuthShell({ mode, dev, name, email, status, failed, onName, onEm
   const draw = useRef(new Animated.Value(0)).current;
   const fields = mode !== "signin";
   const shown = failed || status.endsWith("…");
+  const [typing, setTyping] = useState(false);
+
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardDidShow", () => setTyping(true));
+    const hide = Keyboard.addListener("keyboardDidHide", () => setTyping(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   useEffect(() => {
     Animated.timing(draw, { toValue: 1, duration: 1400, delay: 100, easing: Easing.bezier(0.6, 0, 0.2, 1), useNativeDriver: true }).start();
   }, []);
 
   return (
-    <View style={styles.screen}>
-      <View style={[styles.hero, { paddingTop: insets.top }]}>
+    <KeyboardAvoidingView style={styles.screen} behavior="padding">
+      <View style={[styles.hero, fields && styles.heroSmall, typing && styles.heroHidden, { paddingTop: insets.top }]}>
         <Animated.View style={[styles.vertical, { transform: [{ scaleY: draw }] }]} />
         <Animated.View style={[styles.horizontal, { transform: [{ scaleX: draw }] }]} />
         <Animated.View style={[styles.diagonal, { opacity: draw, transform: [{ rotate: "40deg" }] }]} />
@@ -61,7 +71,7 @@ export function AuthShell({ mode, dev, name, email, status, failed, onName, onEm
         <AnimatedMark size={140} color={white} startDelayMs={400} />
       </View>
 
-      <View style={[styles.card, { paddingBottom: insets.bottom + space.lg }]}>
+      <ScrollView style={[styles.card, typing && { marginTop: insets.top }]} contentContainerStyle={[styles.cardContent, { paddingBottom: insets.bottom + space.xl }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         {dev && (
           <View style={styles.top}>
             <Text style={styles.dev}>Dev mode</Text>
@@ -140,21 +150,24 @@ export function AuthShell({ mode, dev, name, email, status, failed, onName, onEm
             </Pressable>
           )}
         </View>
-      </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#000000" },
   hero: { flex: 0.8, minHeight: 0, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  heroSmall: { flex: 0.35 },
+  heroHidden: { display: "none" },
   vertical: { position: "absolute", top: 0, bottom: 0, left: "50%", width: 1, backgroundColor: line },
   horizontal: { position: "absolute", left: 0, right: 0, top: "50%", height: 1, backgroundColor: line },
   diagonal: { position: "absolute", left: "50%", top: "50%", width: 1400, height: 1, marginLeft: -700, backgroundColor: "rgba(255, 255, 255, 0.07)" },
   brand: { position: "absolute", left: space.lg, flexDirection: "row", alignItems: "center", gap: 6 },
   brandText: { fontFamily: family.semibold, fontSize: 20, letterSpacing: -0.8, color: white },
   brandDim: { fontFamily: family.regular, color: "rgba(255, 255, 255, 0.55)" },
-  card: { flex: 1.2, backgroundColor: "#121212", borderTopLeftRadius: 32, borderTopRightRadius: 32, paddingHorizontal: space.lg, paddingTop: space.lg, gap: space.sm, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" },
+  card: { flex: 1.2, backgroundColor: "#121212", borderTopLeftRadius: 32, borderTopRightRadius: 32, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" },
+  cardContent: { paddingHorizontal: space.lg, paddingTop: space.lg, gap: space.sm },
   top: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", minHeight: 24 },
   dev: { fontFamily: family.medium, fontSize: 11, letterSpacing: 0.6, color: "#d9d4ff", backgroundColor: "rgba(123, 115, 240, 0.25)", paddingHorizontal: 10, paddingVertical: 3, borderRadius: 999, overflow: "hidden" },
   switch: { fontFamily: family.regular, fontSize: 13, color: "rgba(255, 255, 255, 0.7)" },
