@@ -2,6 +2,7 @@ export {
   clearImportedWallet,
   createTradingAccount,
   importWalletKey,
+  addressForKey,
   normalizePrivateKey,
   openImportedKey,
   revealRecoveryPhrase,

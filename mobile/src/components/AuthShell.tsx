@@ -19,10 +19,9 @@ type AuthShellProps = {
   onSwitch?: () => void;
   onSubmit: () => void;
   importOpen?: boolean;
-  importAddress?: string;
+  importAddress?: string | null;
   importKey?: string;
   onImportOpen?: (open: boolean) => void;
-  onImportAddress?: (value: string) => void;
   onImportKey?: (value: string) => void;
   missing?: boolean;
 };
@@ -36,7 +35,7 @@ const copy: Record<AuthMode, { title: string; hint: string; go: string }> = {
 const white = "#ffffff";
 const line = "rgba(255, 255, 255, 0.14)";
 
-export function AuthShell({ mode, dev, name, email, status, failed, onName, onEmail, onSwitch, onSubmit, importOpen = false, importAddress = "", importKey = "", onImportOpen, onImportAddress, onImportKey, missing = false }: AuthShellProps) {
+export function AuthShell({ mode, dev, name, email, status, failed, onName, onEmail, onSwitch, onSubmit, importOpen = false, importAddress = null, importKey = "", onImportOpen, onImportKey, missing = false }: AuthShellProps) {
   const insets = useSafeAreaInsets();
   const draw = useRef(new Animated.Value(0)).current;
   const fields = mode !== "signin";
@@ -97,12 +96,11 @@ export function AuthShell({ mode, dev, name, email, status, failed, onName, onEm
             {mode === "create" && importOpen && (
               <>
                 <View style={styles.field}>
-                  <Text style={styles.label}>Wallet address</Text>
-                  <TextInput value={importAddress} onChangeText={onImportAddress} placeholder="0x…" placeholderTextColor="rgba(255,255,255,0.28)" autoCapitalize="none" autoCorrect={false} style={styles.input} />
-                </View>
-                <View style={styles.field}>
                   <Text style={styles.label}>Private key</Text>
                   <TextInput value={importKey} onChangeText={onImportKey} placeholder="0x… (64 hex characters)" placeholderTextColor="rgba(255,255,255,0.28)" secureTextEntry autoCapitalize="none" autoCorrect={false} style={styles.input} />
+                  {importKey.trim() !== "" && (
+                    <Text style={styles.label}>{importAddress ? `This key opens ${importAddress}` : "That is not a valid private key."}</Text>
+                  )}
                 </View>
               </>
             )}

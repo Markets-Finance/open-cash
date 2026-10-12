@@ -64,6 +64,19 @@ export function normalizePrivateKey(value: string): Uint8Array {
   return hexToBytes(trimmed);
 }
 
+export function addressForKey(value: string): `0x${string}` | null {
+  let privateKey: Uint8Array;
+  try {
+    privateKey = normalizePrivateKey(value);
+  } catch {
+    return null;
+  }
+  const session = createSecp256k1SigningSession({ privateKey });
+  const address = getEvmAddress(session.publicKey);
+  session.end();
+  return address;
+}
+
 export function sealImportedKey(prfOutput: Uint8Array, privateKey: Uint8Array): SealedRecord {
   const key = deriveNamespaceKey(prfOutput, importNamespace);
   const record = sealPlaintext(key, importNamespace, Array.from(privateKey, (b) => b.toString(16).padStart(2, "0")).join(""));

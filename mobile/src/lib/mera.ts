@@ -101,8 +101,8 @@ export function revealPhrase(): Promise<string> {
   return revealRecoveryPhrase(passkeyContext());
 }
 
-export function importWallet(privateKey: string, expectedAddress: string): Promise<`0x${string}`> {
-  return importWalletKey(passkeyContext(), { privateKey, expectedAddress });
+export function importWallet(privateKey: string): Promise<`0x${string}`> {
+  return importWalletKey(passkeyContext(), { privateKey });
 }
 
 export function clearImport(): Promise<void> {

@@ -1,5 +1,5 @@
 import { isMeraError } from "@category-labs/mera";
-import type { TradingAccount } from "shared";
+import { addressForKey, type TradingAccount } from "shared";
 import { createAccount, signIn } from "../mera";
 import { avatars, query } from "./dom";
 import { session } from "./state";
@@ -18,6 +18,7 @@ const importToggle = query<HTMLInputElement>("[data-gate-import-toggle]");
 const importFields = query("[data-gate-import-fields]");
 const importLink = query<HTMLButtonElement>("[data-gate-import]");
 const missingEl = query("[data-gate-missing]");
+const importPreview = query("[data-gate-import-preview]");
 
 type Mode = "signin" | "create";
 
@@ -65,7 +66,7 @@ export function initGate(onEnter: () => void) {
     const creating = mode === "create";
     const importing = creating && importToggle.checked;
     for (const name of ["name", "email"]) form.querySelector<HTMLInputElement>(`[name="${name}"]`)!.required = creating;
-    for (const name of ["importAddress", "importKey"]) form.querySelector<HTMLInputElement>(`[name="${name}"]`)!.required = importing;
+    for (const name of ["importKey"]) form.querySelector<HTMLInputElement>(`[name="${name}"]`)!.required = importing;
   }
 
   function setMode(next: Mode) {
@@ -115,6 +116,11 @@ export function initGate(onEnter: () => void) {
   }
 
   switchButton.addEventListener("click", () => setMode(mode === "signin" ? "create" : "signin"));
+  form.querySelector<HTMLInputElement>('[name="importKey"]')!.addEventListener("input", (event) => {
+    const value = (event.target as HTMLInputElement).value;
+    const address = addressForKey(value);
+    importPreview.textContent = value.trim() === "" ? "" : address ? `This key opens ${address}` : "That is not a valid private key.";
+  });
   importToggle.addEventListener("change", () => {
     importFields.hidden = !importToggle.checked;
     syncRequired();
@@ -136,7 +142,11 @@ export function initGate(onEnter: () => void) {
     const name = String(data.get("name") ?? "").trim();
     const email = String(data.get("email") ?? "").trim();
     const bringing = importToggle.checked;
-    const importKey = bringing ? { privateKey: String(data.get("importKey") ?? ""), expectedAddress: String(data.get("importAddress") ?? "") } : undefined;
+    if (bringing && addressForKey(String(data.get("importKey") ?? "")) === null) {
+      say("Enter a valid private key, or untick the wallet box.", "error");
+      return;
+    }
+    const importKey = bringing ? { privateKey: String(data.get("importKey") ?? "") } : undefined;
     void run(async () => {
       try {
         return await createAccount(email, name, importKey);

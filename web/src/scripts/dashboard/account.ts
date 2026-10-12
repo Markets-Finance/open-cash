@@ -1,6 +1,6 @@
 import { avatars, query } from "./dom";
 import { disconnect } from "./tabs";
-import { listTradingKeys, revokeTradingKey, type TradingKey } from "shared";
+import { addressForKey, listTradingKeys, revokeTradingKey, type TradingKey } from "shared";
 import { privateKeyToAccount } from "viem/accounts";
 import { hlNetwork, info } from "../hl";
 import { mainExchange } from "../hlSession";
@@ -107,8 +107,8 @@ export function initAccount() {
 function initImportPane() {
   const trader = requireTrader();
   const state = query("[data-import-state]");
-  const addressInput = query<HTMLInputElement>("[data-import-address]");
   const keyInput = query<HTMLInputElement>("[data-import-key]");
+  const preview = query("[data-import-preview]");
   const go = query<HTMLButtonElement>("[data-import-go]");
   const remove = query<HTMLButtonElement>("[data-import-remove]");
   const status = query("[data-import-status]");
@@ -122,17 +122,23 @@ function initImportPane() {
     ? `You are using the imported wallet ${trader.address}. Your passkey account is ${trader.passkeyAddress}.`
     : `You are using your passkey account ${trader.address}. Nothing is imported.`;
   remove.hidden = !imported;
+  keyInput.addEventListener("input", () => {
+    const address = addressForKey(keyInput.value);
+    preview.textContent = keyInput.value.trim() === "" ? "" : address ? `This key opens ${address}` : "That is not a valid private key.";
+  });
 
   go.addEventListener("click", async () => {
     go.disabled = true;
     try {
       say("Waiting for your passkey…");
-      const address = await importWallet(keyInput.value, addressInput.value);
+      const address = await importWallet(keyInput.value);
       keyInput.value = "";
+      preview.textContent = "";
       say(`Imported ${address}. Reloading so you can sign in with it…`);
       setTimeout(() => location.reload(), 1200);
     } catch (error) {
       keyInput.value = "";
+      preview.textContent = "";
       say(error instanceof Error ? error.message : String(error), "error");
       go.disabled = false;
     }

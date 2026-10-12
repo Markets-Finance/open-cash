@@ -6,6 +6,7 @@ export {
   createTradingAccount,
   deriveNamespaceKey,
   importWalletKey,
+  addressForKey,
   normalizePrivateKey,
   openImportedKey,
   sealImportedKey,

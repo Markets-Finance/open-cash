@@ -126,8 +126,8 @@ import AccountCard from "../AccountCard.astro";
         <div class="acct-page__head"><button type="button" class="back-btn" data-acct-back><span aria-hidden="true">←</span> Account</button><span class="acct-page__title">Import a wallet</span></div>
         <p class="agent__hint" data-import-state></p>
         <p class="agent__hint">Paste the private key of a wallet you own. It is encrypted with your passkey and stored only on this device. It is never sent to a server. Use a wallet you can afford to expose to this browser. A testnet wallet is ideal.</p>
-        <label class="field"><span>Address you expect</span><input type="text" data-import-address autocomplete="off" spellcheck="false" placeholder="0x…" /></label>
         <label class="field"><span>Private key</span><input type="password" data-import-key autocomplete="off" spellcheck="false" placeholder="0x… (64 hex characters)" /></label>
+        <p class="agent__hint" data-import-preview></p>
         <button type="button" class="btn btn--primary" data-import-go>Import with my passkey</button>
         <button type="button" class="btn" data-import-remove hidden>Use my passkey account instead</button>
         <p class="status-line" data-import-status></p>

@@ -50,8 +50,8 @@ export function signIn(): Promise<TradingAccount> {
   return signInTradingAccount(passkeyContext());
 }
 
-export function importWallet(privateKey: string, expectedAddress: string): Promise<`0x${string}`> {
-  return importWalletKey(passkeyContext(), { privateKey, expectedAddress });
+export function importWallet(privateKey: string): Promise<`0x${string}`> {
+  return importWalletKey(passkeyContext(), { privateKey });
 }
 
 export function clearImport(): Promise<void> {

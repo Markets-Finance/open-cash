@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import type { TradingAccount } from "shared";
+import { addressForKey, type TradingAccount } from "shared";
 import { clearImport, importWallet } from "../lib/mera";
 import { dark, family, space, touch } from "../theme";
 
 export function ImportPanel({ trader, onDone }: { trader: TradingAccount; onDone: () => void }) {
-  const [address, setAddress] = useState("");
   const [key, setKey] = useState("");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<{ text: string; failed: boolean } | null>(null);
@@ -15,7 +14,7 @@ export function ImportPanel({ trader, onDone }: { trader: TradingAccount; onDone
     setBusy(true);
     setStatus({ text: "Waiting for your passkey…", failed: false });
     try {
-      const done = await importWallet(key, address);
+      const done = await importWallet(key);
       setKey("");
       setStatus({ text: `Imported ${done}. Signing in with it…`, failed: false });
       onDone();
@@ -46,10 +45,9 @@ export function ImportPanel({ trader, onDone }: { trader: TradingAccount; onDone
       <Text style={styles.note}>
         Paste the private key of a wallet you own. It is encrypted with your passkey and stored only on this device. It is never sent to a server. Use a wallet you can afford to expose to this phone. A testnet wallet is ideal.
       </Text>
-      <Text style={styles.label}>ADDRESS YOU EXPECT</Text>
-      <TextInput value={address} onChangeText={setAddress} autoCapitalize="none" autoCorrect={false} placeholder="0x…" placeholderTextColor={dark.muted} style={styles.input} />
       <Text style={styles.label}>PRIVATE KEY</Text>
       <TextInput value={key} onChangeText={setKey} autoCapitalize="none" autoCorrect={false} secureTextEntry placeholder="0x… (64 hex characters)" placeholderTextColor={dark.muted} style={styles.input} />
+      {key.trim() !== "" && <Text style={styles.note}>{addressForKey(key) ? `This key opens ${addressForKey(key)}` : "That is not a valid private key."}</Text>}
       <Pressable disabled={busy} onPress={() => void submit()} style={({ pressed }) => [styles.cta, busy && styles.ctaOff, pressed && styles.pressed]}>
         <Text style={styles.ctaLabel}>Import with my passkey</Text>
       </Pressable>
