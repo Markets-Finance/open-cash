@@ -7,7 +7,10 @@ import LaunchLink from "./LaunchLink.astro";
   <div class="closing-content">
     <h2 id="closing-title">Every market.<br />One call.</h2>
     <p class="closing-lede">OpenCash is in early access on {site.network}. Leave an email and you'll be told when the terminal opens up.</p>
-    <LaunchLink class="light-button">Sign in with passkey <svg class="arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15m-6-6 6 6-6 6"></path></svg></LaunchLink>
+    <div class="cta-row">
+      <LaunchLink class="light-button">Sign in with passkey <svg class="arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15m-6-6 6 6-6 6"></path></svg></LaunchLink>
+      <a class="light-button button-outline" href={site.androidApkUrl} download>Download for Android <span aria-hidden="true">↓</span></a>
+    </div>
     <form class="waitlist" id="waitlist-form" method="post" action="/waitlist">
       <label class="visually-hidden" for="waitlist-email">Email address</label>
       <input id="waitlist-email" name="email" type="email" required autocomplete="email" placeholder="you@domain.com" />

@@ -49,6 +49,9 @@
 @media (prefers-reduced-motion: reduce) { .hero-tag i { animation: none; } }
 .landing-shell .light-button, .landing-shell .dark-button { background: var(--ink); color: var(--paper); border-radius: 30px; gap: 12px; padding: 9px 16px; font-size: 12px; }
 .landing-shell .light-button:hover, .landing-shell .dark-button:hover { background: #c9c5d2; }
+.cta-row { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.landing-shell .button-outline { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.landing-shell .button-outline:hover { background: var(--ink); color: var(--paper); }
 .product-folder { width: min(820px, 88%); margin: 24px auto 42px; }
 .folder-stage { position: relative; display: grid; padding: 12px; aspect-ratio: 1.8; min-height: 480px; perspective: 1500px; text-align: left; isolation: isolate; }
 .folder-back { position: absolute; inset: 8px -7px -8px; background: #555652; transform: rotate(-1deg); box-shadow: 0 25px 45px #0006; }
