@@ -1,5 +1,5 @@
 ---
-import { footerLinks } from "../../data/site";
+import { footerLinks, site } from "../../data/site";
 import Mark from "../Mark.astro";
 ---
 
@@ -11,6 +11,6 @@ import Mark from "../Mark.astro";
   </div>
   <div class="footer-statement">Trade the narrative.<br /><span>Size the risk.</span></div>
   <div class="footer-bottom">
-    <span>© {new Date().getFullYear()} OpenCash</span><span>Early access · Hyperliquid testnet</span><a href="#home">Back to top ↑</a>
+    <span>© {new Date().getFullYear()} OpenCash</span><span>Early access · {site.network}</span><a href="#home">Back to top ↑</a>
   </div>
 </footer>

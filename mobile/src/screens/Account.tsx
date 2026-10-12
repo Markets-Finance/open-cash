@@ -16,6 +16,7 @@ import { PassCard } from "../components/PassCard";
 import { AuthShell, type AuthMode } from "../components/AuthShell";
 import { SettingIcon, type SettingIconKind } from "../components/SettingIcon";
 import { TabBar, tabBarHeight, type TabKey } from "../components/TabBar";
+import { hlNetwork, networkLabel } from "../lib/hl";
 import { createAccount, revealPhrase, signIn } from "../lib/mera";
 import { LimitsPanel } from "../components/LimitsPanel";
 import { DeleteAccountModal } from "../components/DeleteAccountModal";
@@ -248,7 +249,10 @@ export function Account({
       return;
     }
     if (account !== null) {
-      void saveProfile(entered);
+      void saveProfile(entered).catch((error) => {
+        setFailed(true);
+        setStatus(error instanceof Error ? error.message : String(error));
+      });
       return;
     }
     const key = importOpen ? importKey.trim() : "";
@@ -363,7 +367,7 @@ export function Account({
           {panel === "profile" && formCard}
           {panel === "wallets" && (
             <View style={styles.card}>
-              <Text style={styles.note}>One passkey, one address. Hyperliquid Testnet</Text>
+              <Text style={styles.note}>One passkey, one address. {networkLabel}</Text>
               <Text style={styles.walletAddress}>{account.address}</Text>
               <Action label={copied ? "Copied" : "Copy address"} onPress={() => void copyAddress()} />
             </View>
@@ -406,10 +410,10 @@ export function Account({
           {panel === "network" && (
             <View style={styles.card}>
               <Text style={styles.note}>Network</Text>
-              <Text style={styles.walletAddress}>Hyperliquid Testnet</Text>
+              <Text style={styles.walletAddress}>{networkLabel}</Text>
               <Text style={styles.note}>Margin</Text>
               <Text style={styles.walletAddress}>USDC</Text>
-              <Text style={styles.note}>Deposits arrive from Arbitrum Sepolia through the app. Testnet funds have no value.</Text>
+              <Text style={styles.note}>{hlNetwork === "mainnet" ? "Deposits arrive from Arbitrum through the app. These are real funds." : "Deposits arrive from Arbitrum Sepolia through the app. Testnet funds have no value."}</Text>
             </View>
           )}
           {status !== "" && <Text style={[styles.status, failed && styles.statusFailed]}>{status}</Text>}
@@ -473,7 +477,7 @@ export function Account({
             email={profile?.email}
             tier={isDevAuth ? "Dev account" : "Passkey pass"}
             variant={variant}
-            network="Hyperliquid Testnet"
+            network={networkLabel}
             value={portfolio}
             copied={copied}
             onCopyAddress={() => void copyAddress()}
@@ -522,7 +526,7 @@ export function Account({
 
                   <Text style={styles.sectionLabel}>Settings</Text>
                   <View style={styles.group}>
-                    <Row icon="globe" tint="blue" label="Network" value="Hyperliquid Testnet" onPress={() => openPanel("network")} />
+                    <Row icon="globe" tint="blue" label="Network" value={networkLabel} onPress={() => openPanel("network")} />
                     <Row icon="exit" tint="peach" label="Sign out" onPress={signOut} last />
                   </View>
 

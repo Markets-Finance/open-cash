@@ -1,4 +1,5 @@
 ---
+import { mainnet, site } from "../../data/site";
 import AccountCard from "../AccountCard.astro";
 ---
 
@@ -55,7 +56,7 @@ import AccountCard from "../AccountCard.astro";
       <div class="account-group" role="list">
         <button type="button" class="setting-row" data-acct-open="network">
           <span class="setting-row__icon setting-row__icon--blue"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke-width="2.4"/><ellipse cx="12" cy="12" rx="4" ry="9" fill="none" stroke-width="2"/><path d="M3 12h18" stroke-width="2"/></svg></span>
-          <span class="setting-row__label">Network</span><span class="setting-row__value">Hyperliquid Testnet</span><span class="setting-row__chev" aria-hidden="true">›</span>
+          <span class="setting-row__label">Network</span><span class="setting-row__value">{site.network}</span><span class="setting-row__chev" aria-hidden="true">›</span>
         </button>
         <button type="button" class="setting-row" data-sign-out>
           <span class="setting-row__icon setting-row__icon--peach"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5" fill="none" stroke-width="2.6"/><path d="M9 12h11M16 8l4 4-4 4" fill="none" stroke-width="2.6"/></svg></span>
@@ -143,8 +144,8 @@ import AccountCard from "../AccountCard.astro";
       <div class="card acct-page" data-acct-pane="network" hidden>
         <div class="acct-page__head"><button type="button" class="back-btn" data-acct-back><span aria-hidden="true">←</span> Account</button><span class="acct-page__title">Network</span></div>
         <span class="card__label">Network</span>
-        <p class="account-address">Hyperliquid Testnet · chain 10143</p>
-        <p class="agent__hint">Trading runs on the Hyperliquid testnet exchange. Testnet funds have no value.</p>
+        <p class="account-address">{site.network}</p>
+        <p class="agent__hint">{mainnet ? "Trading runs on the Hyperliquid exchange with real funds." : "Trading runs on the Hyperliquid testnet exchange. Testnet funds have no value."}</p>
       </div>
 
       <p class="account-status" data-account-status role="status"></p>

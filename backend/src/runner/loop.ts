@@ -17,7 +17,7 @@ import { agentIssue, mandateIssue } from "./integrity.js";
 import { listBots, saveBot, type ServerBot } from "./store.js";
 import { loadKey } from "./vault.js";
 
-const maxOrderUsd = Number(process.env.BOT_MAX_ORDER_USD ?? 100);
+const maxOrderUsd = Number(process.env.BOT_MAX_ORDER_USD || Infinity);
 
 function stopped(bot: ServerBot, message: string): ServerBot {
   return {

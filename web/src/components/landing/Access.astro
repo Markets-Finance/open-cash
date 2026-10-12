@@ -1,3 +1,6 @@
+---
+import { site } from "../../data/site";
+---
 <section class="access-section section-frame" id="network">
   <div class="section-heading">
     <h2>One terminal.<br />Every leg connected.</h2>
@@ -19,7 +22,7 @@
         <div class="integration-details">
           <p>Market data is read from Hyperliquid's public API. Orders are signed by a trade-only key and sized to the market's lot step before they are sent.</p>
           <code>loadMarkets()<br />sizeBinFor(bin, margin, data)<br />openBin(trader, sized, data, onStep)<br />loadOpenPositions(owner, data)<br />closePosition(trader, position)</code>
-          <p>The trading key cannot withdraw, and every order runs on Hyperliquid testnet during early access.</p>
+          <p>The trading key cannot withdraw, and every order runs on {site.network} during early access.</p>
         </div>
       </details>
     </article>

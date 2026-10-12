@@ -10,10 +10,11 @@ import { StrategyLab } from "../components/StrategyLab";
 import { TabBar, tabBarHeight, type TabKey } from "../components/TabBar";
 import { CardTitle, RoundButton, ScreenTitle, SelectPill, Switcher, Tag, ToneCard, tone } from "../components/ui";
 import { draftBot, removeBot, setBotEnabled, subscribeBots, updateBotRules } from "../lib/bots";
+import { hlNetwork } from "../lib/hl";
 import { publishStrategy } from "../lib/ranks";
 import { dark, family, space, touch } from "../theme";
 
-const explorer = "https://app.hyperliquid-testnet.xyz/explorer/tx/";
+const explorer = hlNetwork === "mainnet" ? "https://app.hyperliquid.xyz/explorer/tx/" : "https://app.hyperliquid-testnet.xyz/explorer/tx/";
 
 const ideas = [
   { text: "long ETH short BTC 2x $100 stop 8%", fill: tone.sky },
@@ -39,6 +40,7 @@ export function Bots({ name, labSymbol, onSelectTab, onOpenAsset }: BotsProps) {
   const [prompt, setPrompt] = useState("");
   const [mode, setMode] = useState<BotMode>("guard");
   const [hint, setHint] = useState<string | null>(null);
+  const showError = (error: unknown) => setHint(error instanceof Error ? error.message : String(error));
   const [view, setView] = useState<"strategies" | "agent">("strategies");
   const [liveKey, setLiveKey] = useState(0);
 
@@ -186,7 +188,7 @@ export function Bots({ name, labSymbol, onSelectTab, onOpenAsset }: BotsProps) {
                     <TextInput
                       defaultValue={String(bot.rules.minCarryAprPct)}
                       keyboardType="numbers-and-punctuation"
-                      onEndEditing={(event) => void updateBotRules(bot.id, { minCarryAprPct: Number(event.nativeEvent.text) || 0 })}
+                      onEndEditing={(event) => void updateBotRules(bot.id, { minCarryAprPct: Number(event.nativeEvent.text) || 0 }).catch(showError)}
                       style={styles.smallInput}
                     />
                   </View>
@@ -195,7 +197,7 @@ export function Bots({ name, labSymbol, onSelectTab, onOpenAsset }: BotsProps) {
                     <TextInput
                       defaultValue={String(bot.rules.maxOpensPerDay)}
                       keyboardType="number-pad"
-                      onEndEditing={(event) => void updateBotRules(bot.id, { maxOpensPerDay: Math.max(1, Number(event.nativeEvent.text) || 1) })}
+                      onEndEditing={(event) => void updateBotRules(bot.id, { maxOpensPerDay: Math.max(1, Number(event.nativeEvent.text) || 1) }).catch(showError)}
                       style={styles.smallInput}
                     />
                   </View>
@@ -223,7 +225,7 @@ export function Bots({ name, labSymbol, onSelectTab, onOpenAsset }: BotsProps) {
 
               <View style={styles.actions}>
                 <Pressable
-                  onPress={() => void setBotEnabled(bot.id, !bot.enabled)}
+                  onPress={() => void setBotEnabled(bot.id, !bot.enabled).catch(showError)}
                   style={({ pressed }) => [styles.action, { backgroundColor: bot.enabled ? tone.paper : tone.coral }, pressed && styles.pressed]}
                 >
                   <Text style={styles.actionLabel}>{bot.enabled ? "Stop" : "Start"}</Text>
@@ -238,7 +240,7 @@ export function Bots({ name, labSymbol, onSelectTab, onOpenAsset }: BotsProps) {
                 >
                   <Text style={styles.actionQuietLabel}>Share</Text>
                 </Pressable>
-                <Pressable onPress={() => void removeBot(bot.id)} style={({ pressed }) => [styles.action, styles.actionQuiet, pressed && styles.pressed]}>
+                <Pressable onPress={() => void removeBot(bot.id).catch(showError)} style={({ pressed }) => [styles.action, styles.actionQuiet, pressed && styles.pressed]}>
                   <Text style={styles.actionQuietLabel}>Delete</Text>
                 </Pressable>
               </View>

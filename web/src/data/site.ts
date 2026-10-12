@@ -1,6 +1,8 @@
+export const mainnet = import.meta.env.PUBLIC_HL_NETWORK === "mainnet";
+
 export const site = {
   name: "OpenCash",
-  network: "Hyperliquid testnet",
+  network: mainnet ? "Hyperliquid mainnet" : "Hyperliquid testnet",
   dashboardPath: "/dashboard",
   launchEnabled: true,
   description:

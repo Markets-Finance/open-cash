@@ -3,6 +3,7 @@ import { createHlExchange, createHlInfo, type HlNetwork, type TradingAccount } f
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 export const hlNetwork: HlNetwork = process.env.EXPO_PUBLIC_HL_NETWORK === "mainnet" ? "mainnet" : "testnet";
+export const networkLabel = hlNetwork === "mainnet" ? "Hyperliquid Mainnet" : "Hyperliquid Testnet";
 export const info = createHlInfo(hlNetwork);
 
 const agentName = "OpenCash";

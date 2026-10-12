@@ -1,4 +1,4 @@
-import { createBot, createBotRuntime, createHlBotDeps, maxOrderNotionalUsd, type Bot, type BotMode, type BotRuntime } from "shared";
+import { createBot, createBotRuntime, createHlBotDeps, type Bot, type BotMode, type BotRuntime } from "shared";
 import { agentExchange, agentReady } from "../../hlSession";
 import { info } from "../../hl";
 import { query } from "../dom";
@@ -23,7 +23,7 @@ async function ensureRuntime(): Promise<BotRuntime> {
   const trader = requireTrader();
   const exchange = await agentExchange(trader);
   runtime = createBotRuntime({
-    deps: createHlBotDeps({ info, exchange, user: trader.address, toolbox, maxNotionalUsd: maxOrderNotionalUsd, guard: guardForBot }),
+    deps: createHlBotDeps({ info, exchange, user: trader.address, toolbox, maxNotionalUsd: Infinity, guard: guardForBot }),
     storage: localBotStorage(trader.address),
     onChange: paint,
   });

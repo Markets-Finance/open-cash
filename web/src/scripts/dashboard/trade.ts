@@ -26,6 +26,7 @@ let openHook: ((next: string) => void) | null = null;
 let pendingAsset = false;
 let accepted = false;
 let availableUsd = 0;
+let funded: boolean | null = null;
 let costRun = 0;
 const gapCache = new Map<string, WeekendGapStats>();
 
@@ -251,9 +252,15 @@ export async function initTrade() {
       ? `${leg.size} ${displaySymbol(symbol)} · ${usd(leg.notional)} notional · ${leg.leverage}x`
       : (sizing?.issues[0]?.detail ?? "");
     accepted = false;
-    ui.submit.textContent = `${side === "long" ? "Long" : "Short"} ${displaySymbol(symbol)}`;
+    paintSubmit();
     ui.submit.dataset.side = side;
     void renderCost();
+  }
+
+  function paintSubmit() {
+    ui.submit.toggleAttribute("data-open-deposit", funded === false);
+    if (funded === false) ui.submit.textContent = "Deposit to trade";
+    else if (!accepted) ui.submit.textContent = `${side === "long" ? "Long" : "Short"} ${displaySymbol(symbol)}`;
   }
 
   function renderDesk() {
@@ -306,6 +313,8 @@ export async function initTrade() {
     ui.balance.textContent = usd(desk.equity);
     availableUsd = Math.max(0, desk.equity - used);
     ui.available.textContent = `Available ${usd(availableUsd)}`;
+    funded = availableUsd > 0;
+    paintSubmit();
     ui.note.textContent = desk.equity > 0 ? `${usd(used)} in margin on ${desk.positions.length} open positions` : "No funds yet. Use Deposit to add USDC.";
     ui.updated.textContent = desk.updatedAt.toLocaleTimeString();
     renderDesk();
@@ -420,8 +429,10 @@ export async function initTrade() {
     renderTicketSize();
   });
   query<HTMLButtonElement>("[data-trade-refresh]").addEventListener("click", () => void refresh().catch(() => {}));
+  document.addEventListener("balance:changed", () => void refresh().catch(() => {}));
 
   ui.submit.addEventListener("click", async () => {
+    if (funded === false) return;
     const sizing = currentSizing();
     if (!sizing || sizing.sized.legs.length === 0) {
       say(ui.status, sizing?.issues[0]?.detail ?? "Enter a margin amount.", "error");
@@ -490,7 +501,7 @@ export async function initTrade() {
       ui.margin.scrollIntoView({ behavior: "smooth", block: "center" });
     },
     changed: () => {
-      void refresh();
+      void refresh().catch((error) => say(ui.status, errorText(error), "error"));
       void renderChart();
     },
   });

@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { closeBin, hlBinInputSource, marketSession, maxOrderNotionalUsd, openBin, planBin, previewFloorBin, weekendCloseAt, weightModes, type Bin, type BinSizingIssue, type SizedBin, type TradingAccount, type WeightMode } from "shared";
 import { openFlooredBin } from "../lib/floor";
 import { guardOrThrow } from "../lib/guardrails";
-import { agentExchange, info, withFundingHint } from "../lib/hl";
+import { agentExchange, info, networkLabel, withFundingHint } from "../lib/hl";
 import { SelectPill } from "../components/ui";
 import { AssetMark, LegStack } from "../components/AssetMark";
 import { displaySymbol, loadAccountDesk, type MarketData } from "../lib/market";
@@ -239,7 +239,7 @@ export function BinDetail({ bin, data, balance, trader, onBack }: BinDetailProps
         ) : null}
 
         <Text style={styles.footnote}>
-          Legs fill one at a time on Hyperliquid testnet. If one fails, the legs that filled are closed.
+          Legs fill one at a time on {networkLabel}. If one fails, the legs that filled are closed.
         </Text>
       </ScrollView>
 

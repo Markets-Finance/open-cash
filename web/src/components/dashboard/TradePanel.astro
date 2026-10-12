@@ -1,3 +1,6 @@
+---
+import { site } from "../../data/site";
+---
 <section class="panel" data-panel="trade" hidden>
 
   <div data-trade-list>
@@ -5,7 +8,7 @@
       <div class="card card--balance widget widget--account">
         <div class="balance-head">
           <span class="card__label">Account</span>
-          <span class="chain-badge">Hyperliquid Testnet</span>
+          <span class="chain-badge">{site.network}</span>
         </div>
         <span class="stat-card__value stat-card__value--lg trade-mono" data-trade-balance>—</span>
         <div class="balance-meta">
@@ -86,7 +89,7 @@
           <div class="stat-grid stat-grid--four" data-trade-stats><p class="empty">Loading…</p></div>
           <span class="panel__label">Order book depth</span>
           <div class="depth" data-trade-depth></div>
-          <p class="panel__lede">Positive funding means longs pay shorts. Figures come from Hyperliquid testnet.</p>
+          <p class="panel__lede">Positive funding means longs pay shorts. Figures come from {site.network}.</p>
         </div>
       </div>
 

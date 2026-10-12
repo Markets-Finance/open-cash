@@ -5,7 +5,6 @@ import {
   createHlBotDeps,
   createToolbox,
   defaultLimits,
-  maxOrderNotionalUsd,
   ruleDrafter,
   type Bot,
   type BotMode,
@@ -43,7 +42,7 @@ async function ensureRuntime(): Promise<BotRuntime> {
   const exchange = await agentExchange(trader);
   const key = `opencash.bots.${trader.address.toLowerCase()}`;
   runtime = createBotRuntime({
-    deps: createHlBotDeps({ info, exchange, user: trader.address, toolbox, maxNotionalUsd: maxOrderNotionalUsd, guard: guardForBot }),
+    deps: createHlBotDeps({ info, exchange, user: trader.address, toolbox, maxNotionalUsd: Infinity, guard: guardForBot }),
     onChange: notify,
     storage: {
       load: async () => {

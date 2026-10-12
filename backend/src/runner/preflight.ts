@@ -15,7 +15,7 @@ import { agentIssue, mandateIssue } from "./integrity.js";
 import type { ServerBot } from "./store.js";
 import { hasKey, loadKey } from "./vault.js";
 
-const maxOrderUsd = Number(process.env.BOT_MAX_ORDER_USD ?? 100);
+const maxOrderUsd = Number(process.env.BOT_MAX_ORDER_USD || Infinity);
 
 export type PreflightCheck = { name: string; ok: boolean; detail: string };
 

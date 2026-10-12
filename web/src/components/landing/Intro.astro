@@ -1,4 +1,5 @@
 ---
+import { mainnet } from "../../data/site";
 import { phone } from "../../data/landing";
 import Mark from "../Mark.astro";
 ---
@@ -12,7 +13,7 @@ import Mark from "../Mark.astro";
       <small>USDC balance</small><strong class="phone-balance">1,000<span>.00</span></strong>
       <div class="phone-actions"><span>Test</span><span>Run</span></div>
       <div class="mini-chart"><svg viewBox="0 0 240 90" aria-hidden="true"><path d="M0 78 16 70 30 74 45 52 59 58 75 36 89 45 105 29 120 38 135 19 150 29 167 12 180 21 199 9 215 15 240 2" /></svg></div>
-      <div class="phone-label">Hyperliquid markets <span>Testnet</span></div>
+      <div class="phone-label">Hyperliquid markets <span>{mainnet ? "Mainnet" : "Testnet"}</span></div>
       {phone.markets.map(([symbol, ticker, name]) => (
         <div class="market-row"><span class="coin">{symbol}</span><span><b>{ticker}</b><small>{name}</small></span><span class="market-direction">Long <small>HL</small></span></div>
       ))}

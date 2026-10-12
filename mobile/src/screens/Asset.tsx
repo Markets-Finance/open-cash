@@ -11,7 +11,7 @@ import { OrderTicket } from "../components/OrderTicket";
 import { PositionPanel } from "../components/PositionPanel";
 import { RoundButton, SelectPill, Tag, ToneCard, tone } from "../components/ui";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { agentExchange, info } from "../lib/hl";
+import { agentExchange, info, networkLabel } from "../lib/hl";
 import { displaySymbol, loadAccountDesk, loadCandles, loadMarkets, loadMarketView, type MarketData } from "../lib/market";
 import { dark, family, space, touch } from "../theme";
 
@@ -286,7 +286,7 @@ export function Asset({ symbol, trader, onBack, onSelectTab, onStrategies }: Ass
               </View>
             ))}
           </View>
-          <Text style={styles.muted}>Positive funding means longs pay shorts. Figures come from Hyperliquid testnet.</Text>
+          <Text style={styles.muted}>Positive funding means longs pay shorts. Figures come from {networkLabel}.</Text>
         </ToneCard>
 
         <Pressable onPress={() => onStrategies(symbol)} style={({ pressed }) => [styles.strategy, pressed && styles.pressed]}>

@@ -1,5 +1,5 @@
 import * as templates from "shared";
-import { esc, markForSymbol, px, query, usd } from "../dom";
+import { errorText, esc, markForSymbol, px, query, usd } from "../dom";
 import { requireTrader } from "../state";
 import { equityChart } from "./chart";
 import { loadSeries, simOptions, type Series } from "./data";
@@ -101,12 +101,16 @@ export async function addPaperBot(template: templates.Template, params: template
   await paintPapers();
 }
 
+function paperFailed(error: unknown) {
+  query("[data-paper-list]").innerHTML = `<p class="empty">Paper bots could not load: ${esc(errorText(error))}. Retrying shortly.</p>`;
+}
+
 export function initPaper() {
   bots = load();
-  void paintPapers();
+  void paintPapers().catch(paperFailed);
   clearInterval(timer);
   timer = setInterval(() => {
-    if (!document.hidden && bots.length > 0) void paintPapers();
+    if (!document.hidden && bots.length > 0) void paintPapers().catch(paperFailed);
   }, refreshMs);
   query("[data-paper-list]").addEventListener("click", async (event) => {
     const root = (event.target as HTMLElement).closest<HTMLElement>("[data-paper]");

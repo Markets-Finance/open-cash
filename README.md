@@ -87,7 +87,7 @@ Three ways in:
 | Layer | Behaviour |
 |---|---|
 | Network gate | Bots run on testnet by default. Mainnet requires `BOT_RUNNER_ALLOW_MAINNET=true` **and** `BOT_RUNNER=1` |
-| Order cap | No mainnet-specific cap. Bots use `BOT_MAX_ORDER_USD` (default 100) per order; exits are split into chunks under it |
+| Order cap | No mainnet-specific cap. Bots have no order cap unless `BOT_MAX_ORDER_USD` is set; exits are then split into chunks under it |
 | Entry | IOC limit orders with 1% slippage allowance, leverage set per leg (isolated) |
 | Failed leg | Remaining legs are closed (rollback) and the bot logs the failure |
 | Exit | Stop or target evaluated every 30 s from live position PnL |
@@ -181,7 +181,7 @@ flowchart LR
 | `BOT_RUNNER` | `1` starts the server runner; off otherwise |
 | `BOT_RUNNER_ALLOW_MAINNET` | `true` lets bots be created and run on mainnet |
 | `BOT_KEY_SECRET` | 64 hex chars, encrypts agent keys. Required in production |
-| `BOT_MAX_ORDER_USD` | Per-order notional cap for bots, default 100 |
+| `BOT_MAX_ORDER_USD` | Optional per-order notional cap for bots; unset means no cap |
 | `BUILDER_ADDRESS`, `BUILDER_FEE_TENTHS_BPS` | Optional builder fee |
 | `RELAYER_PRIVATE_KEY`, `RELAYER_ALLOW_MAINNET` | Deposit relayer |
 | `ARBITRUM_RPC_URL`, `ARBITRUM_SEPOLIA_RPC_URL` | Deposit RPCs |
@@ -215,7 +215,7 @@ The flag is `backend/data/kill-switch` on the server (or `KILL_SWITCH=1` in the 
 | Mainnet | Read-only calls only. No mainnet order has been sent |
 | Mainnet bot path | Gated; preflight and integrity checks are new and not yet exercised against a real saved bot |
 | Live strategies | Engine tested against a simulated exchange (`templates/live.check.ts`); routes, dry runs and off switches tested locally; real orders verified on Hyperliquid testnet (`backend/scripts/hl-live.ts`: entry, exchange stop, stop and close, grid resting orders, pause). Not run on mainnet |
-| Kill switch and 404 | Verified locally with `wrangler pages dev` (switch on and off). Not deployed yet |
+| Kill switch and 404 | Deployed; switched on 2026-10-12 (API answers 404 except `/health`) |
 | Deposit relayer | Built, relayer key not configured |
 | Translator | Needs a provider key in `backend/.env` |
 | Persistence | JSON files; fine for one host, not for scale |

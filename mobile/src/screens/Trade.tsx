@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { closeBin, liquidityGrade, loadDeepBook, maxOrderNotionalUsd, slippageBps, type HlPosition, type LiquidityGrade, type TradingAccount } from "shared";
-import { agentExchange, info } from "../lib/hl";
+import { agentExchange, info, networkLabel } from "../lib/hl";
 import { AssetMark } from "../components/AssetMark";
 import { TabBar, tabBarHeight, type TabKey } from "../components/TabBar";
 import { FloorList } from "../components/FloorList";
@@ -115,7 +115,7 @@ export function Trade({ trader, onOpenAsset, onSelectTab }: TradeProps) {
       >
         <GuardBar owner={trader.address} />
         <AlertStrip trader={trader} />
-        <ScreenTitle title="Trade" right={<Tag label="Hyperliquid Testnet" dot={dark.green} />} />
+        <ScreenTitle title="Trade" right={<Tag label={networkLabel} dot={dark.green} />} />
 
         <Switcher
           items={[
@@ -182,7 +182,7 @@ export function Trade({ trader, onOpenAsset, onSelectTab }: TradeProps) {
         {positions === null ? (
           <ActivityIndicator color={dark.ink} />
         ) : positions.length === 0 ? (
-          <Text style={styles.muted}>No open positions on Hyperliquid testnet for this address.</Text>
+          <Text style={styles.muted}>No open positions on {networkLabel} for this address.</Text>
         ) : (
           positions.map((entry) => {
             const long = entry.size >= 0;

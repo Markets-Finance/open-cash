@@ -133,13 +133,16 @@ export function OrderTicket({ trader, data, symbol, initialDirection, onOpened }
     }
   }
 
+  const unfunded = available !== null && available <= 0;
   const blocked = busy
     ? "Working…"
-    : margin <= 0
-      ? "Enter an amount"
-      : !leg
-        ? (preview?.issues[0]?.detail ?? "Size is below one lot")
-        : null;
+    : unfunded
+      ? null
+      : margin <= 0
+        ? "Enter an amount"
+        : !leg
+          ? (preview?.issues[0]?.detail ?? "Size is below one lot")
+          : null;
 
   return (
     <ToneCard>
@@ -223,7 +226,7 @@ export function OrderTicket({ trader, data, symbol, initialDirection, onOpened }
       )}
       <Pressable
         disabled={blocked !== null}
-        onPress={() => void submit()}
+        onPress={() => (unfunded ? requestDeposit() : void submit())}
         style={({ pressed }) => [
           styles.primary,
           { backgroundColor: accent },
@@ -232,7 +235,7 @@ export function OrderTicket({ trader, data, symbol, initialDirection, onOpened }
         ]}
       >
         <Text style={styles.primaryLabel}>
-          {blocked ?? (risky && confirmed ? "Tap again to accept slippage" : `${direction === "long" ? "Long" : "Short"} ${symbol}`)}
+          {blocked ?? (unfunded ? "Deposit to trade" : risky && confirmed ? "Tap again to accept slippage" : `${direction === "long" ? "Long" : "Short"} ${symbol}`)}
         </Text>
       </Pressable>
       {status !== null && <Text style={status.failed ? styles.error : styles.muted}>{status.text}</Text>}
