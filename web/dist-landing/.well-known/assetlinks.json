@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls", "delegate_permission/common.get_login_creds"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "xyz.opencash.monad",
+      "sha256_cert_fingerprints": ["9C:76:19:B6:A0:9B:92:4C:50:8B:1C:3F:32:F3:94:89:DF:A8:D6:0B:EC:5A:8B:D5:1D:78:A5:BD:4A:A2:FB:49"]
+    }
+  }
+]
