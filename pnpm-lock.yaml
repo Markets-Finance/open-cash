@@ -18,7 +18,7 @@ importers:
         version: 5.12.4
       openai:
         specifier: ^7.32.0
-        version: 7.32.0(undici@8.10.2)(ws@8.21.0)(zod@3.25.76)
+        version: 7.32.0(undici@8.10.2)(ws@8.21.3)(zod@3.25.76)
       shared:
         specifier: workspace:*
         version: link:../packages/shared
@@ -65,6 +65,9 @@ importers:
       expo-font:
         specifier: ~57.0.4
         version: 57.0.4(expo@57.0.22)(react-native@0.86.3(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)
+      expo-secure-store:
+        specifier: ~57.0.4
+        version: 57.0.4(expo@57.0.22)
       expo-splash-screen:
         specifier: ~57.0.9
         version: 57.0.9(expo@57.0.22)(typescript@6.0.3)
@@ -89,6 +92,9 @@ importers:
       react-native-safe-area-context:
         specifier: ~5.7.0
         version: 5.7.0(react-native@0.86.3(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)
+      react-native-svg:
+        specifier: 15.15.4
+        version: 15.15.4(react-native@0.86.3(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)
       shared:
         specifier: workspace:^
         version: link:../packages/shared
@@ -2446,8 +2452,15 @@ packages:
   crossws@0.3.5:
     resolution: {integrity: sha512-ojKiDvcmByhwa8YYqbQI/hg7MEU0NC03+pSdEq4ZUnZR9xXpwk7E43SMNGkn+JxJGPFtNvQ48+vV2p+P1ml5PA==}
 
+  css-select@5.2.2:
+    resolution: {integrity: sha512-TizTzUddG/xYLA3NXodFM0fSbNizXjOKhqiQQwvhlspadZokn1KDy0NZFS0wuEubIYAV5/c1/lAr0TaaFXEXzw==}
+
   css-select@6.0.0:
     resolution: {integrity: sha512-rZZVSLle8v0+EY8QAkDWrKhpgt6SA5OtHsgBnsj6ZaLb5dmDVOWUDtQitd9ydxxvEjhewNudS6eTVU7uOyzvXw==}
+
+  css-tree@1.1.3:
+    resolution: {integrity: sha512-tRpdppF7TRazZrjJ6v3stzv93qxRcSsFmW6cX0Zm2NVKpxE1WV1HblnghVv9TreireHkqI/VDEsfolRF1p6y7Q==}
+    engines: {node: '>=8.0.0'}
 
   css-tree@2.2.1:
     resolution: {integrity: sha512-OA0mILzGc1kCOCSJerOeqDxDQ4HOh+G8NbOJFOTgOCzpw7fCBubk0fEyxp8AgOL/jvLgYA/uV0cMbe43ElF1JA==}
@@ -2456,6 +2469,10 @@ packages:
   css-tree@3.2.1:
     resolution: {integrity: sha512-X7sjQzceUhu1u7Y/ylrRZFU2FS6LRiFVp6rKLPg23y3x3c3DOKAwuXGDp+PAGjh6CSnCjYeAul8pcT8bAl+lSA==}
     engines: {node: ^10 || ^12.20.0 || ^14.13.0 || >=15.0.0}
+
+  css-what@6.2.2:
+    resolution: {integrity: sha512-u/O3vwbptzhMs3L1fQE82ZSLHQQfto5gyZzwteVIEyeaY5Fc7R4dapF/BvRoSYFeqfBk4m0V1Vafq5Pjv25wvA==}
+    engines: {node: '>= 6'}
 
   css-what@7.0.0:
     resolution: {integrity: sha512-wD5oz5xibMOPHzy13CyGmogB3phdvcDaB5t0W/Nr5Z2O/agcB8YwOz6e2Lsp10pNDzBoDO9nVa3RGs/2BttpHQ==}
@@ -2722,6 +2739,11 @@ packages:
     resolution: {integrity: sha512-a5ckeHfnbYfonhcHGkM0EU/a0Keh+/OufXy/HyFS+spr5Ib0N4Oh1ZsSYFQhp5xdOUFkVofKRhfH+VmcccIIpA==}
     peerDependencies:
       react-native: '*'
+
+  expo-secure-store@57.0.4:
+    resolution: {integrity: sha512-7zBA1RThURTXdP4w65kBzZNbcSsfArqVd+p+ETAnPRWXO8J296Qd0YaCVyRpJ0HSwlCnGdvOnqO+NgSreHsOhA==}
+    peerDependencies:
+      expo: '*'
 
   expo-server@57.0.3:
     resolution: {integrity: sha512-aK+LdKzauHSGmsOStZtyxdzv0zWssCkxTw3m4QuOhfDSJsZaMRTd9O41d8ixU/QfELTbaJ0oRNcF7JFV/7O9YQ==}
@@ -3275,6 +3297,9 @@ packages:
 
   mdast-util-to-string@4.0.0:
     resolution: {integrity: sha512-0H44vDimn51F0YwvxSJSm0eCDOJTRlmN0R1yBh4HLj9wiV1Dn0QoXGbvFAWj2hSItVTlCmBF1hqKlIyUBVFLPg==}
+
+  mdn-data@2.0.14:
+    resolution: {integrity: sha512-dn6wd0uw5GsdswPFfsgMp5NSB0/aDe6fK94YJV/AJDYXL6HVLWBsxeq7js7Ad+mU2K9LAlwpk6kN2D5mwCPVow==}
 
   mdn-data@2.0.28:
     resolution: {integrity: sha512-aylIc7Z9y4yzHYAJNuESG3hfhC+0Ibp/MAMiaOZgNv4pmEdFyfZhhhny4MNiAfWdBQ1RQ2mfDWmM1x8SvGyp8g==}
@@ -3844,6 +3869,12 @@ packages:
 
   react-native-safe-area-context@5.7.0:
     resolution: {integrity: sha512-/9/MtQz8ODphjsLdZ+GZAIcC/RtoqW9EeShf7Uvnfgm/pzYrJ75y3PV/J1wuAV1T5Dye5ygq4EAW20RoBq0ABQ==}
+    peerDependencies:
+      react: '*'
+      react-native: '*'
+
+  react-native-svg@15.15.4:
+    resolution: {integrity: sha512-boT/vIRgj6zZKBpfTPJJiYWMbZE9duBMOwPK6kCSTgxsS947IFMOq9OgIFkpWZTB7t229H24pDRkh3W9ZK/J1A==}
     peerDependencies:
       react: '*'
       react-native: '*'
@@ -4641,6 +4672,9 @@ packages:
 
   walker@1.0.8:
     resolution: {integrity: sha512-ts/8E8l5b7kY0vlWLewOkDXMmPdLcVV4GmOQLyxuSswIJsweeFZtAsMF7k1Nszz+TYBQrlYRmzOnr398y1JemQ==}
+
+  warn-once@0.1.1:
+    resolution: {integrity: sha512-VkQZJbO8zVImzYFteBXvBOZEl1qL175WH8VmZcxF2fZAoudNhNDvHi+doCaAEdU2l2vtcIwa2zn0QK5+I1HQ3Q==}
 
   wcwidth@1.0.1:
     resolution: {integrity: sha512-XHPEwS0q6TaxcvG85+8EYkbiCux2XtWG2mkc47Ng2A77BQu9+DqIOJldST4HgPkuea7dvKSj5VgX3P1d4rW8Tg==}
@@ -7234,6 +7268,14 @@ snapshots:
     dependencies:
       uncrypto: 0.1.3
 
+  css-select@5.2.2:
+    dependencies:
+      boolbase: 1.0.0
+      css-what: 6.2.2
+      domhandler: 5.0.3
+      domutils: 3.2.2
+      nth-check: 2.1.1
+
   css-select@6.0.0:
     dependencies:
       boolbase: 1.0.0
@@ -7241,6 +7283,11 @@ snapshots:
       domhandler: 5.0.3
       domutils: 3.2.2
       nth-check: 2.1.1
+
+  css-tree@1.1.3:
+    dependencies:
+      mdn-data: 2.0.14
+      source-map: 0.6.1
 
   css-tree@2.2.1:
     dependencies:
@@ -7251,6 +7298,8 @@ snapshots:
     dependencies:
       mdn-data: 2.27.1
       source-map-js: 1.2.1
+
+  css-what@6.2.2: {}
 
   css-what@7.0.0: {}
 
@@ -7537,6 +7586,10 @@ snapshots:
   expo-modules-jsi@57.1.0(react-native@0.86.3(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3)):
     dependencies:
       react-native: 0.86.3(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3)
+
+  expo-secure-store@57.0.4(expo@57.0.22):
+    dependencies:
+      expo: 57.0.22(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-dom@19.2.8(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
 
   expo-server@57.0.3: {}
 
@@ -8209,6 +8262,8 @@ snapshots:
   mdast-util-to-string@4.0.0:
     dependencies:
       '@types/mdast': 4.0.4
+
+  mdn-data@2.0.14: {}
 
   mdn-data@2.0.28: {}
 
@@ -8893,10 +8948,10 @@ snapshots:
       is-docker: 2.2.1
       is-wsl: 2.2.0
 
-  openai@7.32.0(undici@8.10.2)(ws@8.21.0)(zod@3.25.76):
+  openai@7.32.0(undici@8.10.2)(ws@8.21.3)(zod@3.25.76):
     optionalDependencies:
       undici: 8.10.2
-      ws: 8.21.0
+      ws: 8.21.3
       zod: 3.25.76
 
   ora@3.4.0:
@@ -9094,6 +9149,14 @@ snapshots:
     dependencies:
       react: 19.2.3
       react-native: 0.86.3(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3)
+
+  react-native-svg@15.15.4(react-native@0.86.3(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3))(react@19.2.3):
+    dependencies:
+      css-select: 5.2.2
+      css-tree: 1.1.3
+      react: 19.2.3
+      react-native: 0.86.3(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3)
+      warn-once: 0.1.1
 
   react-native@0.86.3(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3):
     dependencies:
@@ -9955,6 +10018,8 @@ snapshots:
   walker@1.0.8:
     dependencies:
       makeerror: 1.0.12
+
+  warn-once@0.1.1: {}
 
   wcwidth@1.0.1:
     dependencies:

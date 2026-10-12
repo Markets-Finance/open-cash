@@ -75,6 +75,9 @@
 :is(.dash, .modal) .row-mark--logo {
   background: #fff;
 }
+:is(.dash, .modal) .row-mark--svg {
+  background: #1b1c1f;
+}
 :is(.dash, .modal) .change-up {
   color: var(--trade-green);
 }

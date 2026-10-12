@@ -2,7 +2,7 @@
   "expo": {
     "name": "OpenCash",
     "slug": "opencash",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -21,7 +21,8 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "xyz.opencash.hl"
+      "package": "xyz.opencash.hl",
+      "versionCode": 10001
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -40,7 +41,8 @@
           }
         }
       ],
-      "./plugins/withReleaseSigning"
+      "./plugins/withReleaseSigning",
+      "expo-secure-store"
     ]
   }
 }

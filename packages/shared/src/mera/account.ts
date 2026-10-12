@@ -44,6 +44,7 @@ export type PasskeyContext = {
   rpName: string;
   store: CredentialStore;
   importStore?: CredentialStore;
+  sessionStore?: CredentialStore;
   webAuthnClient?: WebAuthnClient;
 };
 
@@ -110,6 +111,10 @@ function deriveTradingAccount(prfOutput: Uint8Array, imported?: Uint8Array): Tra
   };
 }
 
+async function keepSession(context: PasskeyContext, prfOutput: Uint8Array): Promise<void> {
+  if (context.sessionStore) await context.sessionStore.write(Array.from(prfOutput, (b) => b.toString(16).padStart(2, "0")).join(""));
+}
+
 function checkedImport(input: { privateKey: string; expectedAddress?: string }): Uint8Array {
   const privateKey = normalizePrivateKey(input.privateKey);
   const preview = createSecp256k1SigningSession({ privateKey: Uint8Array.from(privateKey) });
@@ -143,6 +148,8 @@ export async function createTradingAccount(
     }),
   );
 
+  await keepSession(context, created.prfOutput);
+
   if (importing && context.importStore) {
     const record = sealImportedKey(Uint8Array.from(created.prfOutput), Uint8Array.from(importing));
     await context.importStore.write(JSON.stringify(record));
@@ -175,7 +182,18 @@ export async function signInTradingAccount(
   if (known?.credentialId !== credentialId) {
     await context.store.write(JSON.stringify({ credentialId }));
   }
+  await keepSession(context, prfOutput);
 
+  const sealed = context.importStore ? await context.importStore.read() : null;
+  if (sealed) return deriveTradingAccount(prfOutput, openImportedKey(prfOutput, parseSealedRecord(sealed)));
+  return deriveTradingAccount(prfOutput);
+}
+
+export async function resumeTradingAccount(context: PasskeyContext): Promise<TradingAccount | null> {
+  if (isDevAuth || !context.sessionStore) return null;
+  const stored = await context.sessionStore.read();
+  if (!stored || !/^[0-9a-f]{64}$/.test(stored)) return null;
+  const prfOutput = hexToBytes(stored);
   const sealed = context.importStore ? await context.importStore.read() : null;
   if (sealed) return deriveTradingAccount(prfOutput, openImportedKey(prfOutput, parseSealedRecord(sealed)));
   return deriveTradingAccount(prfOutput);

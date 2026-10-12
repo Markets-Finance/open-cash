@@ -6,6 +6,7 @@ export {
   openImportedKey,
   revealRecoveryPhrase,
   sealImportedKey,
+  resumeTradingAccount,
   signInTradingAccount,
 } from "./account.js";
 export type {

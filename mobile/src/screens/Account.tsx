@@ -1,7 +1,7 @@
 import { isMeraError } from "@category-labs/mera";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Clipboard from "expo-clipboard";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Pressable,
   ScrollView,
@@ -17,7 +17,7 @@ import { AuthShell, type AuthMode } from "../components/AuthShell";
 import { SettingIcon, type SettingIconKind } from "../components/SettingIcon";
 import { TabBar, tabBarHeight, type TabKey } from "../components/TabBar";
 import { hlNetwork, networkLabel } from "../lib/hl";
-import { createAccount, revealPhrase, signIn } from "../lib/mera";
+import { createAccount, endSession, resumeSession, revealPhrase, signIn } from "../lib/mera";
 import { LimitsPanel } from "../components/LimitsPanel";
 import { DeleteAccountModal } from "../components/DeleteAccountModal";
 import { ImportPanel } from "../components/ImportPanel";
@@ -157,14 +157,18 @@ export function Account({
   }
 
   async function run(
-    action: () => Promise<TradingAccount>,
+    action: () => Promise<TradingAccount | null>,
     pending: string,
     created: Profile | null = null,
-  ) {
+  ): Promise<Profile | null | undefined> {
     setFailed(false);
     setStatus(pending);
     try {
       const next = await action();
+      if (next === null) {
+        setStatus("");
+        return;
+      }
       const resolved = created ?? (await loadProfile(next));
       if (created !== null) {
         await AsyncStorage.setItem(
@@ -183,6 +187,7 @@ export function Account({
           ? "Signed in. This device has no profile yet — save one below. Your address is already correct."
           : "Signed in. Your profile was decrypted locally; the key came from your passkey.",
       );
+      return resolved;
     } catch (error) {
       explain(error);
     }
@@ -195,7 +200,18 @@ export function Account({
     setFormMode(next === "profile" ? "profile" : null);
   }
 
+  useEffect(() => {
+    if (initialAccount !== null) return;
+    void resumeSession().then(async (next) => {
+      if (next === null) return;
+      const resolved = await run(async () => next, "Restoring your session…");
+      setStatus("");
+      if (resolved) onInitialised();
+    });
+  }, []);
+
   function signOut() {
+    void endSession();
     account?.end();
     setAccount(null);
     onAuthenticated(null);

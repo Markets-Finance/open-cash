@@ -19,6 +19,7 @@ export {
   relyingPartyName,
   revealRecoveryPhrase,
   seal,
+  resumeTradingAccount,
   signInTradingAccount,
 } from "./mera/index.js";
 export type {

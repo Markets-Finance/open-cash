@@ -1,4 +1,4 @@
-import { assetLogoUrl } from "shared";
+import { assetLogoSources } from "shared";
 
 export function usd(value: number): string {
   return `${value < 0 ? "−" : ""}$${Math.abs(value).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
@@ -24,9 +24,9 @@ export function esc(text: string): string {
 export function markForSymbol(symbol: string): string {
   const name = symbol.split(":").pop() ?? symbol;
   const letter = esc(name.slice(0, 1).toUpperCase());
-  const url = assetLogoUrl(symbol);
-  if (url === null) return `<span class="row-mark row-mark--letter"><span>${letter}</span></span>`;
-  return `<span class="row-mark row-mark--logo"><img src="${url}" alt="" loading="lazy" onerror="var s=this.nextElementSibling;this.parentNode.className='row-mark row-mark--letter';this.remove();s.hidden=false" /><span hidden>${letter}</span></span>`;
+  const [first, ...rest] = assetLogoSources(symbol);
+  const next = esc(rest.join(" "));
+  return `<span class="row-mark row-mark--logo${first.endsWith(".svg") ? " row-mark--svg" : ""}"><img src="${esc(first)}" data-next="${next}" alt="" loading="lazy" onerror="var n=(this.dataset.next||'').split(' ').filter(Boolean);if(n.length){this.dataset.next=n.slice(1).join(' ');this.parentNode.classList.toggle('row-mark--svg',n[0].endsWith('.svg'));this.src=n[0];return}var s=this.nextElementSibling;this.parentNode.className='row-mark row-mark--letter';this.remove();s.hidden=false" /><span hidden>${letter}</span></span>`;
 }
 
 export function legStackHtml(symbols: string[]): string {

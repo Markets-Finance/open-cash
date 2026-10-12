@@ -8,7 +8,7 @@ import {
 import { DelaGothicOne_400Regular } from "@expo-google-fonts/dela-gothic-one";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
-import { View } from "react-native";
+import { AppState, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import type { Bin, TradingAccount } from "shared";
 import { Account, type Profile } from "./src/screens/Account";
@@ -19,6 +19,7 @@ import { startBots, stopBots } from "./src/lib/bots";
 import { Asset } from "./src/screens/Asset";
 import { Deposit } from "./src/screens/Deposit";
 import { onDepositRequest } from "./src/lib/nav";
+import { touchSession } from "./src/lib/mera";
 import { Send } from "./src/screens/Send";
 import { Trade } from "./src/screens/Trade";
 import type { TabKey } from "./src/components/TabBar";
@@ -64,6 +65,13 @@ export default function App() {
   }, []);
 
   useEffect(() => onDepositRequest(() => setScreen("deposit")), []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active" && trader !== null) void touchSession();
+    });
+    return () => subscription.remove();
+  }, [trader]);
 
   if (!loaded && !error && !fontTimedOut) {
     return <View style={{ flex: 1, backgroundColor: dark.paper }} />;
