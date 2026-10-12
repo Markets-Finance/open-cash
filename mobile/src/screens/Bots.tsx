@@ -74,6 +74,9 @@ export function Bots({ name, labSymbol, onSelectTab, onOpenAsset }: BotsProps) {
         showsVerticalScrollIndicator={false}
       >
         <ScreenTitle title="Bots" right={<Tag label={`${running} running`} dot={running > 0 ? dark.green : dark.muted} />} />
+        <View style={styles.depositNote}>
+          <Text style={styles.depositNoteText}>Deposit at least $10 before starting a bot. Hyperliquid's smallest order is $10, so a bot can't place a trade with less.</Text>
+        </View>
 
         <Switcher
           items={[
@@ -285,6 +288,8 @@ const styles = StyleSheet.create({
   rule: { flex: 1, gap: space.xs },
   smallInput: { fontFamily: family.regular, fontSize: 14, color: dark.ink, padding: space.sm, borderRadius: 12, backgroundColor: tone.raised },
   muted: { fontFamily: family.regular, fontSize: 12, lineHeight: 18, color: dark.muted },
+  depositNote: { padding: space.md, borderRadius: 16, backgroundColor: "rgba(123, 115, 240, 0.16)" },
+  depositNoteText: { fontFamily: family.regular, fontSize: 13, lineHeight: 19, color: dark.ink },
   log: { fontFamily: family.regular, fontSize: 11, color: dark.muted },
   logAction: { color: dark.ink },
   down: { color: dark.red },

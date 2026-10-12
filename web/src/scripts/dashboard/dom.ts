@@ -1,4 +1,4 @@
-import { coinLogoUrl, stockLogoUrl } from "shared";
+import { assetLogoUrl } from "shared";
 
 export function usd(value: number): string {
   return `${value < 0 ? "−" : ""}$${Math.abs(value).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
@@ -24,8 +24,9 @@ export function esc(text: string): string {
 export function markForSymbol(symbol: string): string {
   const name = symbol.split(":").pop() ?? symbol;
   const letter = esc(name.slice(0, 1).toUpperCase());
-  const url = symbol.includes(":") ? stockLogoUrl(name) : coinLogoUrl(name);
-  return `<span class="row-mark row-mark--logo"><img src="${url}" alt="" loading="lazy" onerror="var s=this.nextElementSibling;this.remove();s.hidden=false" /><span hidden>${letter}</span></span>`;
+  const url = assetLogoUrl(symbol);
+  if (url === null) return `<span class="row-mark row-mark--letter"><span>${letter}</span></span>`;
+  return `<span class="row-mark row-mark--logo"><img src="${url}" alt="" loading="lazy" onerror="var s=this.nextElementSibling;this.parentNode.className='row-mark row-mark--letter';this.remove();s.hidden=false" /><span hidden>${letter}</span></span>`;
 }
 
 export function legStackHtml(symbols: string[]): string {

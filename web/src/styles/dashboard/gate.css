@@ -39,9 +39,7 @@
 .gate__card { position: relative; display: grid; grid-template-rows: auto 1fr; padding: 28px 32px; border-radius: 28px; background: #121212; border: 1px solid rgba(255, 255, 255, 0.06); }
 .gate__top { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 28px; }
 .gate__dev { padding: 4px 10px; border-radius: 999px; background: rgba(123, 115, 240, 0.25); color: #d9d4ff; font-size: 11px; letter-spacing: 0.04em; }
-.gate__switch { margin-left: auto; border: 0; background: transparent; color: rgba(255, 255, 255, 0.7); font: inherit; font-size: 13px; cursor: pointer; }
-.gate__switch:hover { color: #fff; }
-.gate__form { display: grid; align-content: center; justify-items: start; gap: 22px; padding-bottom: 24px; }
+.gate__form { grid-row: 2; display: grid; align-content: center; justify-items: start; gap: 22px; padding-bottom: 24px; }
 .gate__title { margin: 0; font-size: clamp(44px, 6vw, 72px); font-weight: 400; letter-spacing: -0.05em; line-height: 1; }
 .gate__hint { margin: 0; font-size: 15px; color: rgba(255, 255, 255, 0.55); }
 .gate__fields { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 8px; width: 100%; }
@@ -52,9 +50,15 @@
 .gfield input:focus { border-bottom-color: #fff; }
 .gate__status { min-height: 18px; margin: 0; width: 100%; font-size: 13px; color: rgba(255, 255, 255, 0.6); }
 .gate__status[data-tone="error"] { color: #ec6f5c; }
-.gate__go { position: static; justify-self: end; margin-top: 6px; width: 92px; height: 92px; border: 0; border-radius: 50%; background: #fff; color: #000; font: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; transition: transform 0.15s ease; }
-.gate__go:hover { transform: scale(1.05); }
-.gate__go:disabled { opacity: 0.5; cursor: default; transform: none; }
+.gate__actions { display: grid; gap: 10px; width: 100%; max-width: 420px; }
+.gate__go, .gate__secondary { height: 52px; border-radius: 26px; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s ease, opacity 0.15s ease; }
+.gate__go { border: 0; background: #fff; color: #000; }
+.gate__go:hover { background: #e6e4f0; }
+.gate__go:disabled { opacity: 0.5; cursor: default; }
+.gate__secondary { border: 1px solid rgba(255, 255, 255, 0.28); background: transparent; color: #fff; }
+.gate__secondary:hover { background: rgba(255, 255, 255, 0.08); }
+.gate__missing { width: 100%; max-width: 420px; padding: 14px 16px; border-radius: 14px; background: rgba(236, 111, 92, 0.12); }
+.gate__missing p { margin: 4px 0 0; font-size: 13px; line-height: 1.45; color: rgba(255, 255, 255, 0.7); }
 
 @media (max-width: 860px) {
   .gate { grid-template-columns: minmax(0, 1fr); grid-template-rows: 38vh auto; }
@@ -63,7 +67,6 @@
   .gate__panel { padding: 12px; }
   .gate__card { padding: 22px 20px; }
   .gate__fields { grid-template-columns: 1fr; gap: 18px; }
-  .gate__go { width: 78px; height: 78px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .gate__logo path, .gate__lines i { animation: none; opacity: 1; stroke-dashoffset: 0; transform: none; }
@@ -84,9 +87,8 @@
 .gate__logo path:nth-child(13) { --row: 6; }
 .gate__logo path:nth-child(14) { --row: 7; }
 .gate__lines { position: absolute; inset: 0; pointer-events: none; }
-.gate__dev, .gate__switch { white-space: nowrap; }
+.gate__dev { white-space: nowrap; }
 
-.gate__link { margin-top: 14px; background: none; border: 0; color: var(--muted); font: inherit; text-decoration: underline; cursor: pointer; text-align: left; }
 .gfield--check { display: flex; align-items: center; gap: 10px; }
 .gfield--check input { width: auto; }
 [data-gate-import-block]:not([hidden]) { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 14px; }

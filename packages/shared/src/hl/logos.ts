@@ -9,3 +9,16 @@
 export function stockLogoUrl(symbol: string): string {
   return `https://financialmodelingprep.com/image-stock/${symbol}.png`;
 }
+
+const nonEquity = new Set([
+  "XYZ100", "SP500", "KR200", "JP225", "NIFTY", "IBOV", "DXY", "VIX", "VOL", "H100",
+  "GOLD", "SILVER", "PLATINUM", "PALLADIUM", "COPPER", "ALUMINIUM", "URANIUM",
+  "CL", "BRENTOIL", "NATGAS", "HO", "TTF", "CORN", "WHEAT",
+  "JPY", "EUR", "GBP", "KRW",
+]);
+
+export function assetLogoUrl(symbol: string): string | null {
+  const name = symbol.split(":").pop() ?? symbol;
+  if (!symbol.includes(":")) return `https://assets.coincap.io/assets/icons/${name.toLowerCase()}@2x.png`;
+  return nonEquity.has(name) ? null : stockLogoUrl(name);
+}

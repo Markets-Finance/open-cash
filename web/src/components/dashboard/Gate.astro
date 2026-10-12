@@ -12,10 +12,7 @@ import Mark from "../Mark.astro";
   </section>
   <section class="gate__panel">
     <div class="gate__card">
-      <div class="gate__top">
-        {isDevAuth && <span class="gate__dev">Dev mode · test account</span>}
-        <button type="button" class="gate__switch" data-gate-switch>Create an account</button>
-      </div>
+      {isDevAuth && <div class="gate__top"><span class="gate__dev">Dev mode · test account</span></div>}
       <form class="gate__form" data-gate-form>
         <h1 class="gate__title" data-gate-title>Sign in</h1>
         <p class="gate__hint" data-gate-hint>Use your passkey.</p>
@@ -31,9 +28,16 @@ import Mark from "../Mark.astro";
             <p class="gate__hint">The key is encrypted with your new passkey and stays on this device. It is never sent anywhere.</p>
           </div>
         </div>
+        <div class="gate__missing" data-gate-missing hidden>
+          <b>No passkey found</b>
+          <p>There is no OpenCash passkey on this device, or the prompt was closed. Create an account, or import a wallet you already have.</p>
+        </div>
         <p class="gate__status" data-gate-status role="status"></p>
-        <button type="submit" class="gate__go" data-gate-go>Sign in</button>
-        <button type="button" class="gate__link" data-gate-import>Have a wallet? Import it</button>
+        <div class="gate__actions">
+          <button type="submit" class="gate__go" data-gate-go>Sign in</button>
+          <button type="button" class="gate__secondary" data-gate-import>Import a wallet</button>
+          <button type="button" class="gate__secondary" data-gate-switch>Create an account</button>
+        </div>
       </form>
     </div>
   </section>

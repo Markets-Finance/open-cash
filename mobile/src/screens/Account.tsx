@@ -132,6 +132,7 @@ export function Account({
   const [copied, setCopied] = useState(false);
   const [panel, setPanel] = useState<Panel>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [missing, setMissing] = useState(false);
 
   function explain(error: unknown) {
     setFailed(true);
@@ -142,6 +143,7 @@ export function Account({
       return;
     }
     setStatus(failures[error.code] ?? `${error.code}: ${error.message}`);
+    if (error.code === "PASSKEY_OPERATION_FAILED" && account === null && formMode === null) setMissing(true);
   }
 
   async function loadProfile(next: TradingAccount): Promise<Profile | null> {
@@ -340,11 +342,12 @@ export function Account({
         importOpen={importOpen}
         importAddress={importAddress}
         importKey={importKey}
-        onImportOpen={account === null ? (open) => { setImportOpen(open); if (open) setFormMode("create"); } : undefined}
+        onImportOpen={account === null ? (open) => { setImportOpen(open); setMissing(false); if (open) setFormMode("create"); } : undefined}
         onImportAddress={setImportAddress}
         onImportKey={setImportKey}
-        onSwitch={account === null ? () => setFormMode(formMode === "create" ? null : "create") : undefined}
-        onSubmit={() => (authMode === "signin" ? void run(signIn, "Waiting for your passkey…") : submit())}
+        onSwitch={account === null ? () => { setMissing(false); setFailed(false); setStatus(""); setFormMode(formMode === "create" ? null : "create"); } : undefined}
+        onSubmit={() => { setMissing(false); if (authMode === "signin") void run(signIn, "Waiting for your passkey…"); else submit(); }}
+        missing={missing}
       />
     );
   }

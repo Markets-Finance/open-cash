@@ -24,6 +24,7 @@ type AuthShellProps = {
   onImportOpen?: (open: boolean) => void;
   onImportAddress?: (value: string) => void;
   onImportKey?: (value: string) => void;
+  missing?: boolean;
 };
 
 const copy: Record<AuthMode, { title: string; hint: string; go: string }> = {
@@ -35,7 +36,7 @@ const copy: Record<AuthMode, { title: string; hint: string; go: string }> = {
 const white = "#ffffff";
 const line = "rgba(255, 255, 255, 0.14)";
 
-export function AuthShell({ mode, dev, name, email, status, failed, onName, onEmail, onSwitch, onSubmit, importOpen = false, importAddress = "", importKey = "", onImportOpen, onImportAddress, onImportKey }: AuthShellProps) {
+export function AuthShell({ mode, dev, name, email, status, failed, onName, onEmail, onSwitch, onSubmit, importOpen = false, importAddress = "", importKey = "", onImportOpen, onImportAddress, onImportKey, missing = false }: AuthShellProps) {
   const insets = useSafeAreaInsets();
   const draw = useRef(new Animated.Value(0)).current;
   const fields = mode !== "signin";
@@ -62,14 +63,11 @@ export function AuthShell({ mode, dev, name, email, status, failed, onName, onEm
       </View>
 
       <View style={[styles.card, { paddingBottom: insets.bottom + space.lg }]}>
-        <View style={styles.top}>
-          {dev ? <Text style={styles.dev}>Dev mode</Text> : <View />}
-          {onSwitch && (
-            <Pressable onPress={onSwitch} hitSlop={12}>
-              <Text style={styles.switch}>{mode === "create" ? "I have an account" : "Create an account"}</Text>
-            </Pressable>
-          )}
-        </View>
+        {dev && (
+          <View style={styles.top}>
+            <Text style={styles.dev}>Dev mode</Text>
+          </View>
+        )}
         <Text style={styles.title}>{copy[mode].title}</Text>
         <Text style={styles.hint}>{copy[mode].hint}</Text>
         {fields && (
@@ -110,18 +108,39 @@ export function AuthShell({ mode, dev, name, email, status, failed, onName, onEm
             )}
           </View>
         )}
-        {mode === "signin" && onImportOpen && (
-          <Pressable onPress={() => onImportOpen(true)} hitSlop={8}>
-            <Text style={styles.switch}>Have a wallet? Import it</Text>
-          </Pressable>
+        {missing && mode === "signin" ? (
+          <View style={styles.missing}>
+            <Text style={styles.missingTitle}>No passkey found</Text>
+            <Text style={styles.missingText}>There is no OpenCash passkey on this device, or the prompt was closed. Create an account, or import a wallet you already have.</Text>
+          </View>
+        ) : (
+          shown && <Text style={[styles.status, failed && styles.statusFailed]} numberOfLines={3}>{status}</Text>
         )}
-        <View style={styles.footer}>
-          <Text style={[styles.status, failed && styles.statusFailed]} numberOfLines={3}>
-            {shown ? status : ""}
-          </Text>
-          <Pressable onPress={onSubmit} accessibilityRole="button" style={({ pressed }) => [styles.go, pressed && styles.pressed]}>
-            <Text style={styles.goLabel}>{copy[mode].go}</Text>
-          </Pressable>
+        <View style={styles.actions}>
+          {missing && mode === "signin" && onSwitch ? (
+            <Pressable onPress={onSwitch} accessibilityRole="button" style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
+              <Text style={styles.primaryLabel}>Create an account</Text>
+            </Pressable>
+          ) : (
+            <Pressable onPress={onSubmit} accessibilityRole="button" style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
+              <Text style={styles.primaryLabel}>{copy[mode].go}</Text>
+            </Pressable>
+          )}
+          {mode === "signin" && onImportOpen && (
+            <Pressable onPress={() => onImportOpen(true)} accessibilityRole="button" style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}>
+              <Text style={styles.secondaryLabel}>Import a wallet</Text>
+            </Pressable>
+          )}
+          {onSwitch && !(missing && mode === "signin") && (
+            <Pressable onPress={onSwitch} accessibilityRole="button" style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}>
+              <Text style={styles.secondaryLabel}>{mode === "create" ? "I already have an account" : "Create an account"}</Text>
+            </Pressable>
+          )}
+          {missing && mode === "signin" && (
+            <Pressable onPress={onSubmit} hitSlop={8} style={styles.retry}>
+              <Text style={styles.switch}>Try signing in again</Text>
+            </Pressable>
+          )}
         </View>
       </View>
     </View>
@@ -147,10 +166,16 @@ const styles = StyleSheet.create({
   field: { gap: 4 },
   label: { fontFamily: family.regular, fontSize: 11, color: "rgba(255, 255, 255, 0.55)" },
   input: { fontFamily: family.regular, fontSize: 18, color: white, paddingVertical: 8, paddingHorizontal: 0, borderBottomWidth: 1, borderBottomColor: "rgba(255, 255, 255, 0.28)" },
-  footer: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.md, marginTop: space.md },
-  status: { flex: 1, fontFamily: family.regular, fontSize: 13, color: "rgba(255, 255, 255, 0.6)" },
+  actions: { gap: space.sm, marginTop: space.md },
+  primary: { height: 56, borderRadius: 28, backgroundColor: white, alignItems: "center", justifyContent: "center" },
+  primaryLabel: { fontFamily: family.semibold, fontSize: 16, color: "#000000" },
+  secondary: { height: 56, borderRadius: 28, borderWidth: 1, borderColor: "rgba(255, 255, 255, 0.28)", alignItems: "center", justifyContent: "center" },
+  secondaryLabel: { fontFamily: family.semibold, fontSize: 16, color: white },
+  retry: { alignItems: "center", paddingVertical: space.sm },
+  missing: { gap: 4, padding: space.md, borderRadius: 16, backgroundColor: "rgba(236, 111, 92, 0.12)", marginTop: space.sm },
+  missingTitle: { fontFamily: family.semibold, fontSize: 15, color: white },
+  missingText: { fontFamily: family.regular, fontSize: 13, lineHeight: 18, color: "rgba(255, 255, 255, 0.7)" },
+  status: { fontFamily: family.regular, fontSize: 13, color: "rgba(255, 255, 255, 0.6)" },
   statusFailed: { color: "#ec6f5c" },
-  go: { width: 84, height: 84, borderRadius: 42, backgroundColor: white, alignItems: "center", justifyContent: "center" },
-  goLabel: { fontFamily: family.semibold, fontSize: 11, letterSpacing: 0.9, textTransform: "uppercase", color: "#000000" },
   pressed: { opacity: 0.8 },
 });

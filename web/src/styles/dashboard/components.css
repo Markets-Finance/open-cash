@@ -145,6 +145,9 @@
   background: #fff;
   border: 1px solid var(--surface-line);
 }
+.row-mark--letter {
+  border-radius: 50%;
+}
 .row-mark img {
   width: 100%;
   height: 100%;
@@ -435,3 +438,12 @@
 .pos-inline input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .pos-more { margin-top: 16px; }
 .pos-more summary { cursor: pointer; font-size: 13px; color: var(--muted); padding: 8px 0; }
+
+.bots-note {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: rgba(123, 115, 240, 0.16);
+  font-size: 13px;
+  line-height: 1.45;
+}

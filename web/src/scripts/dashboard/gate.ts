@@ -17,6 +17,7 @@ const importBlock = query("[data-gate-import-block]");
 const importToggle = query<HTMLInputElement>("[data-gate-import-toggle]");
 const importFields = query("[data-gate-import-fields]");
 const importLink = query<HTMLButtonElement>("[data-gate-import]");
+const missingEl = query("[data-gate-missing]");
 
 type Mode = "signin" | "create";
 
@@ -81,13 +82,15 @@ export function initGate(onEnter: () => void) {
       importFields.hidden = true;
     }
     goButton.textContent = creating ? "Create" : "Sign in";
-    switchButton.textContent = creating ? "I have an account" : "Create an account";
+    switchButton.textContent = creating ? "I already have an account" : "Create an account";
+    missingEl.hidden = true;
     syncRequired();
     say("");
     if (creating) form.querySelector("input")?.focus();
   }
 
   async function run(action: () => Promise<TradingAccount>, pending: string, profile?: { name: string; email: string }) {
+    missingEl.hidden = true;
     say(pending);
     goButton.disabled = true;
     try {
@@ -99,6 +102,12 @@ export function initGate(onEnter: () => void) {
       await paintIdentity(account);
       onEnter();
     } catch (error) {
+      if (mode === "signin" && isMeraError(error) && error.code === "PASSKEY_OPERATION_FAILED") {
+        say("");
+        missingEl.hidden = false;
+        goButton.textContent = "Try signing in again";
+        return;
+      }
       say(explain(error, mode), "error");
     } finally {
       goButton.disabled = false;
