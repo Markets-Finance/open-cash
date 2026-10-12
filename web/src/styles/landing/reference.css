@@ -230,6 +230,8 @@
 .activity span small { display: block; font-size: 6px; color: var(--muted); margin-top: 3px; }
 .floating-bin { display: flex; align-items: center; gap: 8px; min-width: 205px; padding: 13px; background: var(--paper); border: 1px solid var(--line); border-radius: 5px; box-shadow: 0 10px 20px #0002; transform: rotate(-4deg); }
 .floating-bin b { font-size: 9px; font-weight: 500; }
+.bin-stack { display: grid; gap: 10px; }
+.bin-stack .floating-bin:nth-child(2) { transform: rotate(3deg); }
 .floating-bin small { display: block; font-size: 6px; color: var(--muted); margin-top: 4px; }
 .margin-card { width: 210px; flex-shrink: 0; height: 132px; border-radius: 9px; padding: 16px; background: linear-gradient(125deg,#c9c9c9,#8f8f8f); color: white; transform: rotate(-8deg); box-shadow: 0 12px 20px #0003; }
 .margin-card > div { display: flex; align-items: center; gap: 7px; font-size: 9px; margin-bottom: 20px; }

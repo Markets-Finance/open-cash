@@ -96,7 +96,7 @@ export const features: { id: string; visual: FeatureVisual; title: string; text:
     id: "bins",
     visual: "bin",
     title: "The narrative is the instrument.",
-    text: "A bin groups markets that move together, like AI, energy or a theme in the headlines, into one position with a size per leg. Enter or rebalance the whole bin in one tap, on live prices.",
+    text: "A bin is a whole narrative in one position: Trump lovers, AI lovers, Vitalik's enemies (long the ETH killers, short ETH), memory chips, oil shock. Each leg is sized and priced live off Hyperliquid, and the whole bin opens or closes in one tap.",
   },
   {
     id: "strategies",
@@ -119,8 +119,8 @@ export const features: { id: string; visual: FeatureVisual; title: string; text:
   {
     id: "cap",
     visual: "cap",
-    title: "A hard cap on every run.",
-    text: "Set the most a strategy may spend before it starts. Leverage is capped to your deposit, and margin is isolated per position.",
+    title: "Loss limits you set.",
+    text: "Set a daily loss limit and a maximum loss per trade if you want them. Tightening is instant, loosening waits 24 hours, so a bad night can't talk you out of it.",
   },
   {
     id: "rank",
@@ -151,6 +151,7 @@ export const surfaces = [
     label: "THEMATIC BINS / ONE POSITION",
     facts: [
       ["Composition", "Markets that move together"],
+      ["Examples", "Trump lovers, AI lovers, Vitalik's enemies"],
       ["Pricing", "Each leg live off the Hyperliquid order book"],
       ["Rebalance", "When you choose, never on a schedule"],
     ],
@@ -162,7 +163,7 @@ export const surfaces = [
     facts: [
       ["Templates", "Breakout, regular buying, grid, trailing stop"],
       ["Testing", "Real Hyperliquid history, then fake money"],
-      ["Limits", "A hard spending cap per run"],
+      ["Limits", "Optional loss limits you set"],
     ],
   },
   {
