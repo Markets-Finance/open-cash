@@ -23,6 +23,7 @@ import { Send } from "./src/screens/Send";
 import { Trade } from "./src/screens/Trade";
 import type { TabKey } from "./src/components/TabBar";
 import { Home } from "./src/screens/Home";
+import { UpdatePrompt } from "./src/components/UpdatePrompt";
 import { loadAccountDesk, loadSummary, type MarketData } from "./src/lib/market";
 import { dark } from "./src/theme";
 
@@ -161,6 +162,7 @@ export default function App() {
           onBack={() => setScreen("bins")}
         />
       ) : null}
+      <UpdatePrompt />
     </SafeAreaProvider>
   );
 }
