@@ -30,7 +30,16 @@ const inputSource = hlBinInputSource(info);
 
 const presets = [10, 25, 50, 100];
 
-export function BinDetail({ bin, data, balance, trader, onBack }: BinDetailProps) {
+export function BinDetail({ bin, data, balance: initialBalance, trader, onBack }: BinDetailProps) {
+  const [balance, setBalance] = useState(initialBalance);
+
+  function refreshBalance() {
+    loadAccountDesk(trader.address, true)
+      .then((desk) => setBalance(Math.max(0, desk.equity - desk.positions.reduce((sum, p) => sum + p.marginUsed, 0))))
+      .catch(() => {});
+  }
+
+  useEffect(refreshBalance, [trader.address]);
   const insets = useSafeAreaInsets();
   const [amount, setAmount] = useState("");
   const [status, setStatus] = useState<string | null>(null);
@@ -75,6 +84,7 @@ export function BinDetail({ bin, data, balance, trader, onBack }: BinDetailProps
       setStatus(withFundingHint(bin.legs.map((l) => l.symbol), error instanceof Error ? error.message : String(error)));
     } finally {
       setBusy(false);
+      refreshBalance();
     }
   }
 
@@ -105,6 +115,7 @@ export function BinDetail({ bin, data, balance, trader, onBack }: BinDetailProps
       setStatus(error instanceof Error ? error.message : String(error));
     } finally {
       setBusy(false);
+      refreshBalance();
     }
   }
 
