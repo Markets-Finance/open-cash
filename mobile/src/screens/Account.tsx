@@ -18,6 +18,7 @@ import { SettingIcon, type SettingIconKind } from "../components/SettingIcon";
 import { TabBar, tabBarHeight, type TabKey } from "../components/TabBar";
 import { hlNetwork, networkLabel } from "../lib/hl";
 import { createAccount, endSession, resumeSession, revealPhrase, signIn } from "../lib/mera";
+import { setBackOverride } from "../lib/nav";
 import { LimitsPanel } from "../components/LimitsPanel";
 import { DeleteAccountModal } from "../components/DeleteAccountModal";
 import { ImportPanel } from "../components/ImportPanel";
@@ -335,6 +336,20 @@ export function Account({
     move: "Move money",
     keys: "Trading keys",
   };
+
+  useEffect(() => {
+    const closable = panel !== null || (account === null && formMode === "create");
+    setBackOverride(
+      closable
+        ? () => {
+            if (panel !== null) closePage();
+            else setFormMode(null);
+            return true;
+          }
+        : null,
+    );
+    return () => setBackOverride(null);
+  }, [panel, formMode, account]);
 
   function closePage() {
     setPanel(null);

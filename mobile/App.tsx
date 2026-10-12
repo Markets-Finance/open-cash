@@ -7,8 +7,8 @@ import {
 } from "@expo-google-fonts/dm-sans";
 import { DelaGothicOne_400Regular } from "@expo-google-fonts/dela-gothic-one";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useState } from "react";
-import { AppState, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { AppState, BackHandler, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import type { Bin, TradingAccount } from "shared";
 import { Account, type Profile } from "./src/screens/Account";
@@ -18,7 +18,7 @@ import { Bots } from "./src/screens/Bots";
 import { startBots, stopBots } from "./src/lib/bots";
 import { Asset } from "./src/screens/Asset";
 import { Deposit } from "./src/screens/Deposit";
-import { onDepositRequest } from "./src/lib/nav";
+import { onDepositRequest, runBackOverride } from "./src/lib/nav";
 import { touchSession } from "./src/lib/mera";
 import { Send } from "./src/screens/Send";
 import { Trade } from "./src/screens/Trade";
@@ -65,6 +65,29 @@ export default function App() {
   }, []);
 
   useEffect(() => onDepositRequest(() => setScreen("deposit")), []);
+
+  const history = useRef<Screen[]>([]);
+  const lastScreen = useRef<Screen>(screen);
+  const goingBack = useRef(false);
+
+  useEffect(() => {
+    if (goingBack.current) goingBack.current = false;
+    else if (lastScreen.current !== screen) history.current = [...history.current, lastScreen.current].slice(-20);
+    lastScreen.current = screen;
+  }, [screen]);
+
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (runBackOverride()) return true;
+      if (trader === null || screen === "home") return false;
+      let previous = history.current.pop();
+      while (previous === screen) previous = history.current.pop();
+      goingBack.current = true;
+      setScreen(previous ?? "home");
+      return true;
+    });
+    return () => subscription.remove();
+  }, [screen, trader]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (state) => {
