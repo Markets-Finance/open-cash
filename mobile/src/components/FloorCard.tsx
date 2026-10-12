@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { marketKind, marketSession, maxOrderNotionalUsd, maxSleeveLeverage, previewFloor, weekendCloseAt, type HlMarket, type TradingAccount } from "shared";
+import { marketKind, marketSession, maxSleeveLeverage, previewFloor, weekendCloseAt, type HlMarket, type TradingAccount } from "shared";
 import { openProtected } from "../lib/floor";
 import { withFundingHint } from "../lib/hl";
 import { displaySymbol } from "../lib/market";
@@ -40,9 +40,7 @@ export function FloorCard({ trader, market, onOpened }: { trader: TradingAccount
       ? null
       : preview.value.notionalUsd < 10
         ? `At ${leverage}x this trades ${usd(preview.value.notionalUsd)}, and the exchange needs at least $10. ${[1, 2, 3, 4, 5].find((l) => preview.value!.sleeveUsd * l >= 10) ? `Use ${[1, 2, 3, 4, 5].find((l) => preview.value!.sleeveUsd * l >= 10)}x, or commit` : "Commit"} at least ${usd(Math.ceil(10.05 / (leverage * (1 - floorPct))))} at ${leverage}x with a ${Math.round(floorPct * 100)}% floor.`
-        : preview.value.notionalUsd > maxOrderNotionalUsd
-          ? `The traded position is above the ${usd(maxOrderNotionalUsd)} testnet cap. Lower the amount or the leverage.`
-          : null;
+        : null;
 
   async function submit() {
     if (!preview?.value) return;

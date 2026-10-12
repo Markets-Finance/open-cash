@@ -5,7 +5,7 @@ import type { HlMarketKind } from "./orders.js";
 import { getAccount, type HlPosition } from "./positions.js";
 import { getSpotBalances, listSpotMarkets } from "./spot.js";
 
-export const maxOrderNotionalUsd = 100;
+export const maxOrderNotionalUsd = Infinity;
 export const hlDexes = ["", "xyz"];
 
 export type TradeMarket = {

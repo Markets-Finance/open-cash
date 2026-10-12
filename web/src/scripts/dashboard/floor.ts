@@ -209,10 +209,6 @@ export function initFloorCard(hooks: { current: () => { symbol: string; isLong: 
         );
         return;
       }
-      if (preview.notionalUsd > maxOrderNotionalUsd) {
-        previewEl.insertAdjacentHTML("beforeend", `<p class="cost__warn">The traded position is above the ${usd(maxOrderNotionalUsd)} testnet cap. Lower the amount or the leverage.</p>`);
-        return;
-      }
       openBtn.disabled = false;
     } catch (error) {
       previewEl.innerHTML = `<p class="cost__warn">${errorText(error)}</p>`;
