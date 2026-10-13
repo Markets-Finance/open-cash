@@ -13,7 +13,7 @@
 ![Venue](https://img.shields.io/badge/venue-Hyperliquid-97FCE4)
 ![Status](https://img.shields.io/badge/status-live%20on%20mainnet-2ea44f)
 
-[Landing page](https://hl.opencash.in) · [Pitch deck](https://claude.ai/artifact/BB4iT3CtLw9m4zhhCoG48b) · [Android app](https://opencash-hl-downloads.s3.ap-southeast-2.amazonaws.com/opencash.apk)
+[Landing page](https://hl.opencash.in) · [Android app](https://opencash-hl-downloads.s3.ap-southeast-2.amazonaws.com/opencash.apk)
 
 </div>
 
